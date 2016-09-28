@@ -1,0 +1,167 @@
+//Chapter -2 Spark Programming model - Scala example code
+> bin/spark-shell	// Start Spark-shell 
+Scala> _      // For simplicity sake, no Log messages are shown here
+
+Scala> sc   //Check the type of Predefined SparkContext object
+res1: org.apache.spark.SparkContext = org.apache.spark.SparkContext@70884875
+
+//Pass the file path to create an RDD from local file system
+Scala> val fileRDD = sc.textFile("RELEASE")
+
+Scala> fileRDD  //Check the type of fileRDD object 
+res2: fileRDD: org.apache.spark.rdd.RDD[String] = RELEASE MapPartitionsRDD[1] at textFile at <console>:24
+
+Scala>fileRDD.first()   //action method. Evaluates RDD DAG and also returns the first item in the RDD along with the time taken
+res2: String = Spark 2.0.0 built for Hadoop 2.7.2
+
+// Pass a Scala collection to create an RDD
+Scala> val numRDD = sc.parallelize(List(1,2,3,4),2)
+numRDD: org.apache.spark.rdd.RDD[Int] = ParallelCollectionRDD[8] at parallelize at <console>:24
+
+Scala> numRDD
+res3: org.apache.spark.rdd.RDD[Int] = ParallelCollectionRDD[2] at parallelize at <console>:24
+
+Scala> numRDD.first()
+res4: Int = 1
+
+Scala> numRDD.map(x => x*x).collect()
+res5: Array[Int] = Array(1, 4, 9, 16)
+
+Scala> numRDD.map(x => x * x).reduce(_+_)
+res6: Int = 30
+
+//Transformations on normal RDDs
+//Filter
+val a = sc.parallelize(1 to 10, 3)
+val b = a.filter(_ % 3 == 0)
+b.collect
+
+res7: Array[Int] = Array(3, 6, 9)
+
+//Distinct
+val c = sc.parallelize(List("John", "Jack", "Mike", "Jack"), 2)
+c.distinct.collect
+res8: Array[String] = Array(Mike, John, Jack)
+
+//Intersection
+val x = sc.parallelize(1 to 10)
+val y = sc.parallelize(5 to 15)
+val z = x.intersection(y)
+z.collect
+
+res10: Array[Int] = Array(6, 8, 10, 7, 9, 5)
+
+//Union
+val a = sc.parallelize(3 to 7, 1)
+val b = sc.parallelize(7 to 9, 1)
+val c = a.union(b)     // An alternative way is (a ++ b).collect
+
+res11: Array[Int] = Array(3, 4, 5, 6, 7, 7, 8, 9)
+
+//Map
+val a = sc.parallelize(List("animal", "human", "bird", "rat"), 3)
+val b = a.map(_.length)
+val c = a.zip(b)
+c.collect
+
+res12: Array[(String, Int)] = Array((animal,6), (human,5), (bird,4), (rat,3))
+
+
+//flatMap
+val a = sc.parallelize(1 to 5, 4)
+a.flatMap(1 to _).collect
+res13: Array[Int] = Array(1, 1, 2, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 5)
+
+//One more example
+sc.parallelize(List(5, 10, 20), 2).flatMap(x => List(x, x, x)).collect
+res14: Array[Int] = Array(5, 5, 5, 10, 10, 10, 20, 20, 20)
+
+//keys
+val a = sc.parallelize(List("black", "blue", "white", "green", "grey"), 2)
+val b = a.map(x => (x.length, x))
+b.keys.collect
+
+res15: Array[Int] = Array(5, 4, 5, 5, 4)
+
+//cartesian
+val x = sc.parallelize(List(1,2,3))
+val y = sc.parallelize(List(10,11,12))
+x.cartesian(y).collect
+
+res16: Array[(Int, Int)] = Array((1,10), (1,11), (1,12), (2,10), (2,11), (2,12), (3,10), (3,11), (3,12))
+
+//Transformations on PairedRDDs
+//groupByKey
+val a = sc.parallelize(List("black", "blue", "white", "green", "grey"), 2)
+val b = a.keyBy(_.length)
+b.groupByKey.collect
+ 
+res17: Array[(Int, Iterable[String])] = Array((4,CompactBuffer(blue, grey)), (5,CompactBuffer(black, white, green)))
+
+//join
+val a = sc.parallelize(List("blue", "green", "orange"), 3)
+val b = a.keyBy(_.length)
+val c = sc.parallelize(List("black", "white", "grey"), 3)
+val d = c.keyBy(_.length)
+b.join(d).collect
+res18: Array[(Int, (String, String))] = Array((4,(blue,grey)), (5,(green,black)), (5,(green,white)))
+
+//leftOuterJoin
+b.leftOuterJoin(d).collect
+res19: Array[(Int, (String, Option[String]))] = Array((6,(orange,None)), (4,(blue,Some(grey))), (5,(green,Some(black))), (5,(green,Some(white))))
+
+//rightOuterJoin
+b.rightOuterJoin(d).collect
+res20: Array[(Int, (Option[String], String))] = Array((4,(Some(blue),grey)), (5,(Some(green),black)), (5,(Some(green),white)))
+
+//fullOuterJoin
+b.fullOuterJoin(d).collect
+res21: Array[(Int, (Option[String], Option[String]))] = Array((6,(Some(orange),None)), (4,(Some(blue),Some(grey))), (5,(Some(green),Some(black))), (5,(Some(green),Some(white))))
+
+//reduceByKey
+val a = sc.parallelize(List("black", "blue", "white", "green", "grey"), 2)
+val b = a.map(x => (x.length, x))
+b.reduceByKey(_ + _).collect
+res22: Array[(Int, String)] = Array((4,bluegrey), (5,blackwhitegreen))
+
+val a = sc.parallelize(List("black", "blue", "white", "orange"), 2)
+val b = a.map(x => (x.length, x))
+b.reduceByKey(_ + _).collect
+res23: Array[(Int, String)] = Array((4,blue), (6,orange), (5,blackwhite))
+
+//aggregate
+val z = sc.parallelize(List(1,2,7,4,30,6), 2)
+z.aggregate(0)(math.max(_, _), _ + _)
+res24: Int = 37
+
+val z = sc.parallelize(List("a","b","c","d"),2)
+z.aggregate("")(_ + _, _+_)
+res25: String = cdab                                                            
+
+
+z.aggregate("x")(_ + _, _+_)
+res116: String = xxabxcd
+
+val z = sc.parallelize(List("12","234","345","56789"),2)
+z.aggregate("")((x,y) => math.max(x.length, y.length).toString, (x,y) => x + y)
+res141: String = 35
+
+z.aggregate("")((x,y) => math.min(x.length, y.length).toString, (x,y) => x + y)
+res142: String = 11
+
+val z = sc.parallelize(List("12","234","345",""),2)
+z.aggregate("")((x,y) => math.min(x.length, y.length).toString, (x,y) => x + y)
+res143: String = 10
+
+//Actions examples
+Scala> sc.parallelize(List(2, 3, 4)).count()
+res0: Long = 3
+
+Scala> sc.parallelize(List(2, 3, 4)).collect()
+res1: Array[Int] = Array(2, 3, 4)
+
+Scala> sc.parallelize(List(2, 3, 4)).first()
+res2: Int = 2
+
+Scala> sc.parallelize(List(2, 3, 4)).take(2)
+res3: Array[Int] = Array(2, 3)

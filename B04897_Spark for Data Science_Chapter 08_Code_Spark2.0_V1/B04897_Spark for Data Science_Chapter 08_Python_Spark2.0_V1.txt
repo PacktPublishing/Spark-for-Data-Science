@@ -1,0 +1,289 @@
+//Chapter 8 Unstructured Data - Python example code
+
+// Example-1: Extract date like strings from text
+
+>>> from pyspark.ml.feature import RegexTokenizer
+>>> date_pattern = "\\d{1,4}[/ -]\\d{1,4}[/ -]\\d{1,4}"
+>>> textDF  = spark.createDataFrame([
+        [1, "Hello 1996-12-12 this 1-21-1111 is a 18-9-96 text "],
+        [2, "string with dates in different 01/02/89 formats"]]).toDF(
+        "LineNo","Text")
+>>> date_regex = RegexTokenizer(inputCol="Text",outputCol="dateStr",
+                gaps=False, pattern=date_pattern)
+>>> date_regex.transform(textDF).select("dateStr").show(5,False)
++--------------------------------+
+|dateStr                         |
++--------------------------------+
+|[1996-12-12, 1-21-1111, 18-9-96]|
+|[01/02/89]                      |
++--------------------------------+
+>>>
+//Example-2: Extract most popular tags from twitter “text” 
+
+>>> from pyspark.sql.functions import explode, split
+//Step1: Load text containing @ from source file 
+>>> path ="../work/tweets.json"
+>>> raw_df1 = spark.read.text(path)
+>>> raw_df = raw_df1.where("value like '%@%'")
+>>>
+//Step2: Split the text to words and filter out non-tag words
+>>> df = raw_df.select(explode(split("value"," "))) 
+>>> df1 = df.where("col like '@%'").toDF("word")
+>>>
+//Step3: compute tag-wise counts and report top 5 
+>>> df1.groupBy("word").count().sort(
+   "count",ascending=False).show(5)
++------------+-----+                                                            
+|        word|count|
++------------+-----+
+|@ApacheSpark|   15|
+|    @SSKapci|    9|
+|@databricks:|    4|
+| @ApacheApex|    4|
+|     @hadoop|    4|
++------------+-----+
+//Example 3: Count Vectorizer example
+
+>>> from pyspark.ml.feature import CountVectorizer,CountVectorizerModel
+>>> from pyspark.ml.linalg import Vector
+>>>
+// Define source DataFrame
+>>> df = spark.createDataFrame([
+  [0, ["ant", "bat", "cat", "dog", "eel"]],
+  [1, ["dog","bat", "ant", "bat", "cat"]]
+ ]).toDF("id", "words")
+>>>
+// Fit a CountVectorizerModel from the corpus
+// Minimum occorrences (DF) is 2 and pick 10 top words(vocabsize) only
+>>> cvModel = CountVectorizer(inputCol="words", outputCol="features",
+                minDF = 2, vocabSize = 10).fit(df)
+>>>
+// Check vocabulary. Words are arranged as per frequency
+// eel is dropped because it is below minDF = 2
+>>> cvModel.vocabulary
+[u'bat', u'ant', u'cat', u'dog']
+//Apply the model on document
+>>> cvDF = cvModel.transform(df)
+//Check the word count
+>>> cvDF.show(2,False)
++---+-------------------------+-------------------------------+
+|id |words                    |features                       |
++---+-------------------------+-------------------------------+
+|0  |[ant, bat, cat, dog, eel]|(4,[0,1,2,3],[1.0,1.0,1.0,1.0])|
+|1  |[dog, bat, ant, bat, cat]|(4,[0,1,2,3],[2.0,1.0,1.0,1.0])|
++---+-------------------------+-------------------------------+
+>>>
+
+// Example 4: define CountVectorizerModel with a-priori vocabulary
+Not possible in python as of spark 2.0.0
+
+// Example 5: Stopword Remover
+
+>>> from pyspark.ml.feature import StopWordsRemover
+>>> RawData = sqlContext.createDataFrame([
+    (0, ["I", "ate", "the", "cake"]),
+    (1, ["John ", "had", "a", " tennis", "racquet"])
+    ], ["id", "raw_text"])
+>>>
+>>> remover = StopWordsRemover(inputCol="raw_text", 
+                outputCol="processed_text")
+>>> remover.transform(RawData).show(truncate=False)
++---+---------------------------------+-------------------------+
+|id |raw_text                         |processed_text           |
++---+---------------------------------+-------------------------+
+|0  |[I, ate, the, cake]              |[ate, cake]              |
+|1  |[John , had, a,  tennis, racquet]|[John ,  tennis, racquet]|
++---+---------------------------------+-------------------------+
+
+//Example 6: Word2Vec
+>>> from pyspark.ml.feature import Word2Vec
+>>> from pyspark.sql.functions import explode, split
+>>> 
+//Step1: Load text file and split to words
+>>> path = "../work/RobertFrost.txt"
+>>> raw_text = spark.read.text(path).select(
+         split("value"," ")).toDF("words")
+//Step2: Prepare features vector of size 4
+>>> resultDF = Word2Vec(inputCol="words",outputCol="features",
+                 vectorSize=4, minCount=2).fit(
+                 raw_text).transform(raw_text)
+//Examine results
+scala> resultDF.show(5)
++--------------------+--------------------+
+|               words|            features|
++--------------------+--------------------+
+|[Whose, woods, th...|[-0.0209098898340...|
+|[His, house, is, ...|[-0.0013444167044...|
+|[He, will, not, s...|[-0.0058525378408...|
+|[To, watch, his, ...|[-0.0189630933296...|
+|[My, little, hors...|[-0.0084691265597...|
++--------------------+--------------------+
+
+// Example 7: NGram
+ 
+>>> from pyspark.ml.feature import NGram
+>>> wordDF = spark.createDataFrame([
+         [0, ["Hi", "I", "am", "a", "Scientist"]],
+         [1, ["I", "am", "just", "learning", "Spark"]],
+         [2, ["Coding", "in", "Scala", "is", "easy"]]
+         ]).toDF("label", "words")
+//Create an ngram model with 3 words length (default is 2)
+>>> ngramModel = NGram(inputCol="words", outputCol= "ngrams",n=3)
+>>>
+//Apply on input data frame
+>>> ngramModel.transform(wordDF).select("ngrams").show(4,False)
++--------------------------------------------------+
+|ngrams                                            |
++--------------------------------------------------+
+|[Hi I am, I am a, am a Scientist]                 |
+|[I am just, am just learning, just learning Spark]|
+|[Coding in Scala, in Scala is, Scala is easy]     |
++--------------------------------------------------+
+Example 8: Naive Bayes
+-----------------------
+// Step 1: Initialization
+//Step1a: Define a udfs to assign a category
+// One or more similar words are treated as one category (eg survey, poll)
+// If input list contains any of the words in a category list, it is assigned to that category
+// "General" is assigned if none of the categories matched
+>>> def findCategory(words):
+        idx = 0; category  = ""
+        categories = [["Python"], ["Hadoop","hadoop"], 
+          ["survey","poll"],["event","training", "Meetup", "summit",
+          "talk", "talks", "Setting","sessions", "workshop"],
+          ["resource","Guide","newsletter", "Blog"]]
+        while(not category and idx < len(categories)):
+          if len(set(words).intersection(categories[idx])) > 0:
+             category = categories[idx][0] #First word in the category list
+          else:
+             idx+=1
+        if not category:   #No match found
+          category = "General"
+        return category
+>>>
+//Step 1b: Define udf to convert string category to a numerical label
+>>> def idxCategory(category):
+       catgDict = {"General" :1, "event" :2, "Hadoop" :2,
+             "Python": 4, "resource" : 5}
+       return catgDict[category]
+>>>
+//Step 1c: Register UDFs
+>>> from pyspark.sql.functions import udf
+>>> from pyspark.sql.types import StringType, IntegerType
+>>> findCategoryUDF = udf(findCategory, StringType())
+>>> idxCategoryUDF = udf(idxCategory, IntegerType())
+
+//Step 1d: List categories
+>>> categories =["General","event","Hadoop","Python","resource"]
+
+//Step 2: Prepare train data
+//Step 2a: Extract "text" data and split to words
+>>> from pyspark.sql.functions import split
+>>> path = "../work/tweets_train.txt"
+>>> raw_df1 = spark.read.text(path)
+>>> raw_df = raw_df1.where("value like '%\"text\":%'").select(
+             split("value", " ")).toDF("words")
+//Step 2b: Assign a category to each line
+>>> train_cat_df = raw_df.withColumn("category",
+        findCategoryUDF("words")).withColumn(
+        "label",idxCategoryUDF("category"))
+//Step 2c: Examine categories
+scala> train_cat_df.groupBy("category").count().show()
++--------+---------------+                                                      
+|category|count(category)|
++--------+---------------+
+| General|            146|
+|resource|              1|
+|  Python|              2|
+|   event|             10|
+|  Hadoop|              6|
++--------+---------------+ 
+//Step 3: Build pipeline
+>>> from pyspark.ml import Pipeline
+>>> from pyspark.ml.feature import StopWordsRemover, CountVectorizer, IndexToString
+>>> from pyspark.ml.classification import NaiveBayes
+>>> 
+//Step 3a: Define pipeline stages
+//Stop words should be removed first
+>>> stopw = StopWordsRemover(inputCol = "words",
+                  outputCol = "processed_words")
+//Terms to term frequency converter
+>>> cv = CountVectorizer(inputCol = "processed_words",
+             outputCol = "features")
+//Define model
+>>> model = NaiveBayes(featuresCol="features",
+                   labelCol = "label")
+//Numerical prediction label to category converter
+>>> lc = IndexToString(inputCol = "prediction",
+           outputCol = "predictedCategory",
+           labels = categories)
+>>>
+//Step 3b: Build pipeline with desired stages
+>>> p = Pipeline(stages = [stopw,cv,model,lc])
+>>>
+
+//Step 4: Process train data and get predictions
+//Step 4a: Execute pipeline with train data
+>>> resultsDF = p.fit(train_cat_df).transform(train_cat_df)
+//Step 4b: Examine results
+>>> resultsDF.select("category","predictedCategory").show(3)
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+|   event|            event|
+|   event|            event|
+| General|          General|
++--------+-----------------+
+
+//Step 4c: Look for prediction mismatches
+>>> resultsDF.filter("category != predictedCategory").select(
+         "category","predictedCategory").show(3)
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+|  Python|           Hadoop|
+|  Python|           Hadoop|
+|  Hadoop|            event|
++--------+-----------------+
+
+//Step 5: Evaluate model using test data
+//Step5a: Prepare test data
+>>> path = "../work/tweets.json"
+>>> raw_df1 = spark.read.text(path)
+>>> raw_test_df = raw_df1.where("value like '%\"text\":%'").select(
+               split("value", " ")).toDF("words")
+>>> test_cat_df = raw_test_df.withColumn("category",
+        findCategoryUDF("words")).withColumn(
+        "label",idxCategoryUDF("category"))
+>>> test_cat_df.groupBy("category").count().show()
++--------+---------------+                                                      
+|category|count(category)|
++--------+---------------+
+| General|              6|
+|   event|             11|
++--------+---------------+
+
+//Step 5b: Run predictions on test data
+>>> testResultsDF = p.fit(test_cat_df).transform(test_cat_df)
+//Step 5c:: Examine results
+>>> testResultsDF.select("category","predictedCategory").show(3)
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+| General|          General|
+|   event|            event|
+|   event|            event|
++--------+-----------------+
+
+
+//Step 5d: Look for prediction mismatches
+>>> testResultsDF.filter("category != predictedCategory").select(
+         "category","predictedCategory").show()
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+|   event|          General|
+|   event|          General|
++--------+-----------------+
+
+

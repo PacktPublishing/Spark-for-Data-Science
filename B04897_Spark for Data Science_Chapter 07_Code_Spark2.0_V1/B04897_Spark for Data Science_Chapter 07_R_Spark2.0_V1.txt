@@ -1,0 +1,486 @@
+Getting Started
+===============
+From R shell
+------------
+> R	// Start R shell  --Change to transfer
+> Sys.getenv("SPARK_HOME") //Confirm SPARK_HOME is set
+  <Your SPARK_HOME path>
+> library(SparkR, lib.loc =
+    c(file.path(Sys.getenv("SPARK_HOME"), "R", "lib")))
+
+Attaching package: ‘SparkR’
+The following objects are masked from ‘package:stats’:
+
+    cov, filter, lag, na.omit, predict, sd, var, window
+
+The following objects are masked from ‘package:base’:
+
+    as.data.frame, colnames, colnames<-, drop, endsWith, intersect,
+    rank, rbind, sample, startsWith, subset, summary, transform, union
+> //Try help(package=SparkR) if you want to more information
+
+//initialize SparkSession object
+>  sparkR.session() 
+Java ref type org.apache.spark.sql.SparkSession id 1 
+
+
+Using SparkR
+------------
+>
+> bin/sparkR	// Start SparkR shell 
+>      // For simplicity sake, no Log messages are shown here
+
+> //Try help(package=SparkR) if you want to more information
+>
+
+Programming with SparkR
+------------------------
+> //Open the shell
+> df <- createDataFrame(iris) //Create a Spark DataFrame
+> df    //Check the type. Notice the column renaming using underscore
+> df
+SparkDataFrame[Sepal_Length:double, Sepal_Width:double, Petal_Length:double, Petal_Width:double, Species:string]
+>
+> showDF(df,4) //Print the contents of the Spark DataFrame
++------------+-----------+------------+-----------+-------+
+|Sepal_Length|Sepal_Width|Petal_Length|Petal_Width|Species|
++------------+-----------+------------+-----------+-------+
+|         5.1|        3.5|         1.4|        0.2| setosa|
+|         4.9|        3.0|         1.4|        0.2| setosa|
+|         4.7|        3.2|         1.3|        0.2| setosa|
+|         4.6|        3.1|         1.5|        0.2| setosa|
++------------+-----------+------------+-----------+-------+
+> 
+> head(df,2)  //Returns an R data.frame. Default 6 rows
+  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+> //You can use take(df,2) to get the same results
+//Check the dimensions
+> nrow(df)
+[1] 150
+> ncol(df)
+[1] 5
+>
+Distinguish R data.frames and SparkDataFrames
+----------------------------------------------
+> //Open the SparkR shell
+> df <- createDataFrame(iris) //Create a Spark DataFrame
+> class(df)
+[1] "SparkDataFrame"
+attr(,"package")
+[1] "SparkR"
+> df2 <- head(df,2) //Create an R data frame
+> class(df2)
+ [1] "data.frame"
+> //Now try running some R command on both data frames
+> unique(df2$Species)   //Works fine as expected
+[1] "setosa"
+> unique(df$Species)    //Should fail
+Error in unique.default(df$Species) : unique() applies only to vectors
+> class(df$Species)   //Each column is a Spark’s Column class
+[1] "Column"
+attr(,"package")
+[1] "SparkR
+
+Function name masking
+---------------------
+//First try in R environment, without loading sparkR
+//Try sampling from a column in an R data.frame
+> sample(iris$Sepal.Length,6,FALSE) //Returns any n elements
+[1] 5.1 4.9 4.7 4.6 5.0 5.4
+//Try sampling from an R data.frame.
+//The Boolean argument is for with_replacement
+> head(sample(iris,3,TRUE))  //Returns any 3 columns
+  Species Species.1 Petal.Width
+1  setosa    setosa         0.2
+2  setosa    setosa         0.2
+3  setosa    setosa         0.2
+4  setosa    setosa         0.2
+5  setosa    setosa         0.2
+6  setosa    setosa         0.4
+
+//Load sparkR, initialize sparkSession and then execute this
+> df <- createDataFrame(iris) //Create a Spark DataFrame
+> sample_df <- sample(df,TRUE,0.3) //Different signature
+> dim(sample_df)  //Different behavior
+[1] 44  5
+> //Returned 30% of the original data frame and all columns
+> //Try with base prefix
+> head(base::sample(iris),3,FALSE) //Call base package’s sample
+  Species Petal.Width Petal.Length
+1  setosa         0.2          1.4
+2  setosa         0.2          1.4
+3  setosa         0.2          1.3
+4  setosa         0.2          1.5
+5  setosa         0.2          1.4
+6  setosa         0.4          1.7
+
+
+
+//Subsetting data examples
+> b1 <- createDataFrame(beaver1)
+//Get one column
+> b1$temp
+Column temp    //Column class and not a vector
+> //Select some columns. You may use positions too
+> select(b1, c("day","temp"))
+SparkDataFrame[day:double, temp:double]
+>//Row subset based on conditions
+> head(subset(b1,b1$temp>37,select= c(2,3)))
+  time  temp
+1 1730 37.07
+2 1740 37.05
+3 1940 37.01
+4 1950 37.10
+5 2000 37.09
+6 2010 37.02
+> //Multiple conditions with AND and OR
+> head(subset(b1, between(b1$temp,c(36.0,37.0)) | 
+        b1$time %in% 900 & b1$activ == 1,c(2:4)),2)
+ time  temp activ
+1  840 36.33     0
+2  850 36.34     0
+At the time of writing this book (Apache Spark 2.o release), row index based slicing is not available. You will not be able to get a specific row or range of rows using df[n,] or df[m:n,] syntax.
+For example, try on a normal R data.frame
+> beaver1[2:4,]
+  day time  temp activ
+2 346  850 36.34     0
+3 346  900 36.35     0
+4 346  910 36.42     0
+
+//Now, try on Spark Data frame
+> b1[2:4,] //Throws error
+Expressions other than filtering predicates are not supported in the first parameter of extract operator [ or subset() method.
+>
+
+> //subset using Column operation using airquality dataset as df
+> df <- createDataFrame(airquality)
+> head(subset(df,isNull(df$Ozone)),2)
+  Ozone Solar_R Wind Temp Month Day
+1    NA      NA 14.3   56     5   5
+2    NA     194  8.6   69     5  10
+>
+> //Add column and drop column examples
+> b1 <- createDataFrame(beaver1)
+ 
+//Add new column
+> b1$inRetreat <- otherwise(when(b1$activ == 0,"No"),"Yes")
+> head(b1,2)
+  day time  temp activ inRetreat
+1 346  840 36.33     0        No
+2 346  850 36.34     0        No
+
+//Drop a column. 
+> b1$day <- NULL
+> b1  // Example assumes b1$inRetreat does not exist
+SparkDataFrame[time:double, temp:double, activ:double]
+
+> //Drop columns using negative subscripts
+> b1 <- createDataFrame(beaver1)
+> b2 <- b1[,-c(1,4)]
+> head(b2)
+   time  temp
+1  840 36.33
+2  850 36.34
+3  900 36.35
+4  910 36.42
+5  920 36.55
+6  930 36.69
+> 
+
+> //GroupedData example using iris data as df
+> //Open SparkR shell and create df using iris dataset
+> df <- createDataFrame(iris)
+> groupBy(df,"Species")
+GroupedData    //Returns GroupedData object
+> library(magrittr)  //Load the required library
+//Get group wise average sepal length
+//Report results sorted by species name
+> df2 <- df %>% groupBy("Species") %>% 
+          avg("Sepal_Length") %>% 
+          withColumnRenamed("avg(Sepal_Length)","avg_sepal_len") %>%
+          orderBy ("Species")
+>
+//Format the computed double column
+> df2$avg_sepal_len <- format_number(df2$avg_sepal_len,2)
+> showDF(df2)
++----------+-------------+
+|   Species|avg_sepal_len|
++----------+-------------+
+|    setosa|         5.01|
+|versicolor|         5.94|
+| virginica|         6.59|
++----------+-------------+
+
+
+Common operations
+-----------------
+> //Open the R shell and NOT SparkR shell 
+> library(dplyr,warn.conflicts=FALSE)  //Load dplyr first
+//Perform a common, useful operation
+> iris %>%              
+   group_by(Species) %>%
+   summarise(avg_sepal_length = mean(Sepal.Length), 
+             avg_sepal_width = mean(Sepal.Width)) %>%
+   arrange(desc(avg_sepal_length))
+Source: local data frame [3 x 3]
+
+     Species avg_sepal_length avg_sepal_width
+      (fctr)            (dbl)           (dbl)
+1  virginica            6.588           2.974
+2 versicolor            5.936           2.770
+3     setosa            5.006           3.428
+>
+//Remove the package from R environment
+> detach("package:dplyr",unload=TRUE)
+
+
+> //Open SparkR shell and create df using iris dataset
+> df <- createDataFrame(iris) 
+> collect(arrange(summarize(groupBy(df,df$Species), 
+      avg_sepal_length = avg(df$Sepal_Length),
+      avg_sepal_width = avg(df$Sepal_Width)),
+     "avg_sepal_length", decreasing = TRUE))
+
+     Species avg_sepal_length avg_sepal_width                                   
+1  virginica            6.588           2.974
+2 versicolor            5.936           2.770
+3     setosa            5.006           3.428
+
+> //Register the Spark DataFrame as a table/view
+> createOrReplaceTempView(df,"iris_vw")
+
+//Look at the table structure and some rows
+> collect(sql("SELECT * FROM iris_vw LIMIT 5"))
+  Sepal_Length Sepal_Width Petal_Length Petal_Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+4          4.6         3.1          1.5         0.2  setosa
+5          5.0         3.6          1.4         0.2  setosa
+
+> //Try out the above example using SQL syntax
+> collect(sql("SELECT Species, 
+     avg(Sepal_Length) avg_sepal_length,
+     avg(Sepal_Width) avg_sepal_width
+      FROM iris_vw 
+      GROUP BY Species
+      ORDER BY avg_sepal_length desc"))
+
+     Species avg_sepal_length avg_sepal_width
+
+1  virginica            6.588           2.974
+2 versicolor            5.936           2.770
+3     setosa            5.006           3.428
+
+Set operations
+---------------
+> //Create b1 and b2 DataFrames using beaver1 and beaver2 datasets
+> b1 <- createDataFrame(beaver1)
+> b2 <- createDataFrame(beaver2)
+//Get individual and total counts
+> c(nrow(b1), nrow(b2), nrow(b1) + nrow(b2))
+[1] 114 100 214
+
+//Try adding both data frames using union operation
+> nrow(union(b1,b2))
+[1] 214     //Sum of two datsets
+
+//intersect example
+//Remove the first column (day) and find intersection
+> showDF(intersect(b1[,-c(1)],b2[,-c(1)]))
++------+-----+-----+
+|  time| temp|activ|
++------+-----+-----+
+|1100.0|36.89|  0.0|
++------+-----+-----+
+>
+> //except (minus or A–B) is covered in machine learning examples  
+
+
+Merge DataFrames
+----------------
+> //Example illustrating data frames merging using R (not SparkR)
+> //Create two data frames with a matching column
+//Products df with two rows and two columns
+> products_df <- data.frame(rbind(c(101,"Product 1"),
+                    c(102,"Product 2")))
+> names(products_df) <- c("Prod_Id","Product")
+> products_df
+ Prod_Id   Product
+1     101 Product 1
+2     102 Product 2
+
+//Sales df with sales for each product and month 24x3
+> sales_df <- data.frame(cbind(rep(101:102,each=12), month.abb,
+                sample(1:10,24,replace=T)*10))
+> names(sales_df) <- c("Prod_Id","Month","Sales")
+
+//Look at first 2 and last 2 rows in the sales_df
+> sales_df[c(1,2,23,24),]
+   Prod_Id Month Sales
+1      101   Jan    60
+2      101   Feb    40
+23     102   Nov    20
+24     102   Dec   100
+
+> //merge the data frames and examine the data
+> total_df <- merge(products_df,sales_df)
+//Look at the column names
+> colnames(total_df)
+> [1] "Prod_Id" "Product" "Month"   "Sales"
+
+//Look at first 2 and last 2 rows in the total_df
+> total_df[c(1,2,23,24),] 
+   Prod_Id   Product Month Sales
+1      101 Product 1   Jan    10
+2      101 Product 1   Feb    20
+23     102 Product 2   Nov    60
+24     102 Product 2   Dec    10
+ 
+> //Example illustrating data frames merging using SparkR
+> //Create an R data frame first and then pass it on to Spark
+> //Watch out the base prefix for masked rbind function
+> products_df <- createDataFrame(data.frame(
+       base::rbind(c(101,"Product 1"),
+                c(102,"Product 2"))))
+> names(products_df) <- c("Prod_Id","Product")
+> showDF(products_df)
++-------+---------+
+|Prod_Id|  Product|
++-------+---------+
+|    101|Product 1|
+|    102|Product 2|
++-------+---------+
+
+> //Create Sales data frame
+> //Notice the as.data.frame similar to other R functions
+> //No cbind in SparkR so no need for base:: prefix
+> sales_df <- as.DataFrame(data.frame(cbind(
+		"Prod_Id" = rep(101:102,each=12),
+                "Month" = month.abb,
+                "Sales" = base::sample(1:10,24,replace=T)*10)))
+> //Check sales dataframe dimensions and some random rows 
+> dim(sales_df)
+[1] 24  3
+> collect(sample(sales_df,FALSE,0.20))
+  Prod_Id Month Sales
+1     101   Sep    50
+2     101   Nov    80
+3     102   Jan    90
+4     102   Jul   100
+5     102   Nov    20
+6     102   Dec    50
+
+
+//Merge the data frames. The following merge is from SparkR library
+> total_df <- merge(products_df,sales_df)
+// You may try join function for the same purpose
+//Look at the columns in total_df
+> total_df
+SparkDataFrame[Prod_Id_x:string, Product:string, Prod_Id_y:string, Month:string, Sales:string]
+//Drop duplicate column
+> total_df$Prod_Id_y <- NULL
+> head(total_df)
+  Prod_Id_x   Product Month Sales
+1       101 Product 1   Jan    40
+2       101 Product 1   Feb    10
+3       101 Product 1   Mar    90
+4       101 Product 1   Apr    10
+5       101 Product 1   May    50
+6       101 Product 1   Jun    70
+ 
+Machine learning
+----------------
+// Example to train naive Bayes model
+// The dataset contains average marks and attendance of 20 students.
+// They are awarded pass of fail as per the following criteria:
+// Marks < 40 = Fail
+// Attendence == Poor => Fail
+// Marks >40 and attendence Full => Pass
+// Marks > 60 and attendence Enough or Full => Pass
+// Two exceptions were studentId 1009 and 1020 who were granted Pass
+
+
+//Read file
+> myFile <- read.csv("../work/StudentsPassFail.csv") //R data.frame
+> df <- createDataFrame(myFile) //sparkDataFrame
+//Look at the data
+> showDF(df,4)
++---------+---------+----------+------+
+|StudentId|Avg_Marks|Attendance|Result|
++---------+---------+----------+------+
+|     1001|     48.0|      Full|  Pass|
+|     1002|     21.0|    Enough|  Fail|
+|     1003|     24.0|    Enough|  Fail|
+|     1004|      4.0|      Poor|  Fail|
++---------+---------+----------+------+
+
+//Make three buckets out of Avg_marks
+// A >60; 40 < B < 60; C > 60
+> df$marks_bkt <- otherwise(when(df$Avg_marks < 40, "C"),
+                           when(df$Avg_marks > 60, "A"))
+> df$marks_bkt <- otherwise(when(df$Avg_marks < 40, "C"),
+                           when(df$Avg_marks > 60, "A"))
+> df <- fillna(df,"B",cols="marks_bkt")
+//Split train and test
+> trainDF <- sample(df,TRUE,0.7)
+> testDF <- except(df, trainDF)
+
+//Build model by supplying RFormula, training data
+> model <- spark.naiveBayes(Result ~ Attendance + marks_bkt, data = trainDF)
+> summary(model)
+$apriori
+          Fail      Pass
+[1,] 0.6956522 0.3043478
+
+$tables
+     Attendance_Poor Attendance_Full marks_bkt_C marks_bkt_B
+Fail 0.5882353       0.1764706       0.5882353   0.2941176  
+Pass 0.125           0.875           0.125       0.625      
+
+//Run predictions on test data
+> predictions <- predict(model, newData= testDF)
+//Examine results
+> showDF(predictions[predictions$Result != predictions$prediction,
+     c("StudentId","Attendance","Avg_Marks","marks_bkt", "Result","prediction")])
++---------+----------+---------+---------+------+----------+                    
+|StudentId|Attendance|Avg_Marks|marks_bkt|Result|prediction|
++---------+----------+---------+---------+------+----------+
+|     1010|      Full|     19.0|        C|  Fail|      Pass|
+|     1019|    Enough|     45.0|        B|  Fail|      Pass|
+|     1014|      Full|     12.0|        C|  Fail|      Pass|
++---------+----------+---------+---------+------+----------+
+
+
+
+
+> //Example illustrating Gaussian GLM model using SparkR
+> a <- createDataFrame(airquality)
+//Remove rows with missing values
+> b <- na.omit(a) 
+> //Inspect the dropped rows with missing values
+> head(except(a,b),2)    //MINUS set operation
+  Ozone Solar_R Wind Temp Month Day
+1    NA     186  9.2   84     6   4
+2    NA     291 14.9   91     7  14
+
+//Prepare train data and test data
+> traindata <- sample(b,FALSE,0.8) //Not base::sample
+> testdata <- except(b,traindata)
+
+> //Build model
+> model <- glm(Temp ~ Ozone + Solar_R + Wind, 
+          data = traindata, family = "gaussian")
+> // Get predictions
+> predictions <- predict(model, newData = testdata)
+> head(predictions[,c(predictions$Temp, predictions$prediction)],
+                 5)
+  Temp prediction
+1   90   81.84338
+2   79   80.99255
+3   88   85.25601
+4   87   76.99957
+5   76   71.75683
+

@@ -1,0 +1,385 @@
+//Chapter 8 Unstructured Data - Scala example code
+
+Scala:
+// Example-1: Extract date like strings from text
+scala> import org.apache.spark.ml.feature.RegexTokenizer
+import org.apache.spark.ml.feature.RegexTokenizer
+scala> val date_pattern: String = "\\d{1,4}[/ -]\\d{1,4}[/ -]\\d{1,4}"
+date_pattern: String = \d{1,4}[/ -]\d{1,4}[/ -]\d{1,4}
+scala> val textDF  = spark.createDataFrame(Seq(
+        (1, "Hello 1996-12-12 this 1-21-1111 is a 18-9-96 text "),
+        (2, "string with dates in different 01/02/89 formats"))).
+        toDF("LineNo","Text")
+textDF: org.apache.spark.sql.DataFrame = [LineNo: int, Text: string]
+scala> val date_regex = new RegexTokenizer().
+            setInputCol("Text").setOutputCol("dateStr").
+            setPattern(date_pattern).setGaps(false)
+date_regex: org.apache.spark.ml.feature.RegexTokenizer = regexTok_acdbca6d1c4c
+scala> date_regex.transform(textDF).select("dateStr").show(false) 
++--------------------------------+
+|dateStr                         |
++--------------------------------+
+|[1996-12-12, 1-21-1111, 18-9-96]|
+|[01/02/89]                      |
++--------------------------------+
+
+//Example-2: Extract most popular tags from twitter “text” 
+
+//Step1: Load text containing @ from source file 
+scala> val path = "../work/tweets.json"
+path: String = ../work/tweets.json
+scala> val raw_df = spark.read.text(path).filter($"value".contains("@"))
+raw_df: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [value: string]
+
+//Step2: Split the text to words and filter out non-tag words
+scala> val df1 = raw_df.select(explode(split('value, " ")).as("word")).
+           filter($"word".startsWith("@"))
+df1: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [word: string]
+
+//Step3: compute tag-wise counts and report top 5 
+scala> df1.groupBy($"word").agg(count($"word")).
+         orderBy($"count(word)".desc).show(5)
++------------+-----------+                                                      
+|        word|count(word)|
++------------+-----------+
+|@ApacheSpark|         15|
+|    @SSKapci|          9|
+|@databricks:|          4|
+|     @hadoop|          4|
+| @ApacheApex|          4|
++------------+-----------+
+
+//Example 3: Count Vectorizer example
+scala> import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
+import org.apache.spark.ml.feature.{CountVectorizer, CountVectorizerModel}
+scala> import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.DataFrame
+scala> import org.apache.spark.ml.linalg.Vector
+import org.apache.spark.ml.linalg.Vector
+scala> val df: DataFrame = spark.createDataFrame(Seq(
+  (0, Array("ant", "bat", "cat", "dog", "eel")),
+  (1, Array("dog","bat", "ant", "bat", "cat"))
+)).toDF("id", "words")
+df: org.apache.spark.sql.DataFrame = [id: int, words: array<string>]
+scala>
+// Fit a CountVectorizerModel from the corpus
+// Minimum occurrences (DF) is 2 and pick 10 top words(vocabsize) only
+scala> val cvModel: CountVectorizerModel = new CountVectorizer().
+          setInputCol("words").setOutputCol("features").
+          setMinDF(2).setVocabSize(10).fit(df)
+cvModel: org.apache.spark.ml.feature.CountVectorizerModel = cntVec_7e79157ba561
+// Check vocabulary. Words are arranged as per frequency
+// eel is dropped because it is below minDF = 2
+scala> cvModel.vocabulary
+res6: Array[String] = Array(bat, dog, cat, ant)
+//Apply the model on document
+scala> val cvDF: DataFrame = cvModel.transform(df)
+cvDF: org.apache.spark.sql.DataFrame = [id: int, words: array<string> ... 1 more field]
+//Check the word count
+scala> cvDF.select("features").collect().foreach(row =>
+           println(row(0).asInstanceOf[Vector].toDense))
+
+[1.0,1.0,1.0,1.0]
+[2.0,1.0,1.0,1.0]
+
+Input:
+id  | text
+----|--------------------------------------------
+0   | "ant", "bat", "cat", "dog", "eel"      
+1   | "dog","bat", "ant", "bat", "cat"
+Output:
+id| text                             | Vector
+--|----------------------------------|-----------------
+0 |"ant", "bat", "cat", "dog", "eel" |[1.0,1.0,1.0,1.0]
+1 |"dog","bat", "ant", "bat", "cat"  |[2.0,1.0,1.0,1.0]
+
+Note that the features vector order corresponds to vocabulary
+
+// Example 4: define CountVectorizerModel with a-priori vocabulary
+scala> val cvm: CountVectorizerModel = new CountVectorizerModel(
+            Array("ant", "bat", "cat")).
+            setInputCol("words").setOutputCol("features")
+cvm: org.apache.spark.ml.feature.CountVectorizerModel = cntVecModel_ecbb8e1778d5
+//Apply on the same data. Feature order corresponds to a-priory vocabulary order
+scala> cvm.transform(df).select("features").collect().foreach(row =>
+           println(row(0).asInstanceOf[Vector].toDense))
+[1.0,1.0,1.0]
+[1.0,2.0,1.0]
+
+
+// Example 5: Stopword Remover
+ 
+scala> import org.apache.spark.ml.feature.StopWordsRemover
+import org.apache.spark.ml.feature.StopWordsRemover
+scala> import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.DataFrame
+scala> import org.apache.spark.ml.linalg.Vector
+import org.apache.spark.ml.linalg.Vector
+scala> val rawdataDF = spark.createDataFrame(Seq(
+        (0, Array("I", "ate", "the", "cake")),
+        (1, Array("John ", "had", "a", " tennis", "racquet")))).
+         toDF("id","raw_text")
+rawdataDF: org.apache.spark.sql.DataFrame = [id: int, raw_text: array<string>]
+scala> val remover = new StopWordsRemover().setInputCol("raw_text").
+                    setOutputCol("processed_text")
+remover: org.apache.spark.ml.feature.StopWordsRemover = stopWords_55edbac88edb
+scala> remover.transform(rawdataDF).show(truncate=false)
++---+---------------------------------+-------------------------+
+|id |raw_text                         |processed_text           |
++---+---------------------------------+-------------------------+
+|0  |[I, ate, the, cake]              |[ate, cake]              |
+|1  |[John , had, a,  tennis, racquet]|[John ,  tennis, racquet]|
++---+---------------------------------+-------------------------+
+
+Example 6: Word2Vec
+--------------------
+scala> import org.apache.spark.ml.feature.Word2Vec
+import org.apache.spark.ml.feature.Word2Vec
+//Step1: Load text file and split to words
+scala> val path = "../work/RobertFrost.txt"
+path: String = ../work/RobertFrost.txt
+scala> val raw_text = spark.read.text(path).select(
+          split('value, " ") as "words")
+raw_text: org.apache.spark.sql.DataFrame = [words: array<string>]
+//Step2: Prepare features vector of size 4
+scala> val resultDF = new Word2Vec().setInputCol("words").
+        setOutputCol("features").setVectorSize(4).
+        setMinCount(2).fit(raw_text).transform(raw_text)
+resultDF: org.apache.spark.sql.DataFrame = [words: array<string>, features: vector]
+//Examine results
+scala> resultDF.show(5)
++--------------------+--------------------+
+|               words|            features|
++--------------------+--------------------+
+|[Whose, woods, th...|[-0.0209098898340...|
+|[His, house, is, ...|[-0.0013444167044...|
+|[He, will, not, s...|[-0.0058525378408...|
+|[To, watch, his, ...|[-0.0189630933296...|
+|[My, little, hors...|[-0.0084691265597...|
++--------------------+--------------------+
+
+Example 7: NGram
+----------------
+scala> import org.apache.spark.ml.feature.NGram
+import org.apache.spark.ml.feature.NGram
+scala> val wordDF = spark.createDataFrame(Seq(
+         (0, Array("Hi", "I", "am", "a", "Scientist")),
+         (1, Array("I", "am", "just", "learning", "Spark")),
+         (2, Array("Coding", "in", "Scala", "is", "easy"))
+         )).toDF("label", "words")
+//Create an ngram model with 3 words length (default is 2)
+scala> val ngramModel = new NGram().setInputCol(
+              "words").setOutputCol("ngrams").setN(3)
+ngramModel: org.apache.spark.ml.feature.NGram = ngram_dc50209cf693
+//Apply on input data frame
+scala> ngramModel.transform(wordDF).select("ngrams").show(false)
++--------------------------------------------------+
+|ngrams                                            |
++--------------------------------------------------+
+|[Hi I am, I am a, am a Scientist]                 |
+|[I am just, am just learning, just learning Spark]|
+|[Coding in Scala, in Scala is, Scala is easy]     |
++--------------------------------------------------+
+//Apply the model on another dataframe, Word2Vec raw_text
+scala>ngramModel.transform(raw_text).select("ngrams").take(1).foreach(println)
+[WrappedArray(Whose woods these, woods these are, these are I, are I think, I think I, think I know.)]
+
+Example 8: Naive Bayes
+-----------------------
+// Step 1: Define a udf to assign a category
+// One or more similar words are treated as one category (eg survey, poll)
+// If input list contains any of the words in a category list, it is assigned to that category
+// "General" is assigned if none of the categories matched
+scala> import scala.collection.mutable.WrappedArray
+import scala.collection.mutable.WrappedArray
+scala> val findCategory = udf ((words: WrappedArray[String]) =>
+    { var idx = 0; var category : String = ""
+    val categories : List[Array[String]] =  List(
+     Array("Python"), Array("Hadoop","hadoop"), 
+     Array("survey","poll"),
+      Array("event","training", "Meetup", "summit",
+          "talk", "talks", "Setting","sessions", "workshop"),
+     Array("resource","Guide","newsletter", "Blog"))
+    while(idx < categories.length && category.isEmpty ) {
+        if (!words.intersect(categories(idx)).isEmpty) {
+         category = categories(idx)(0) }  //First word in the category list
+     idx += 1 }
+    if (category.isEmpty) {
+    category = "General"  }
+    category
+  })
+findCategory: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function1>,StringType,Some(List(ArrayType(StringType,true))))
+//UDF to convert category to a numerical label
+scala> val idxCategory = udf ((category: String) =>
+        {val catgMap = Map({"General"->1},{"event"->2},{"Hadoop"->3},
+                             {"Python"->4},{"resource"->5})
+         catgMap(category)})
+idxCategory: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function1>,IntegerType,Some(List(StringType)))
+scala> val labels = Array("General","event","Hadoop","Python","resource")
+
+//Step 2: Prepare train data
+//Step 2a: Extract "text" data and split to words
+scala> val path = "../work/tweets_train.txt"
+path: String = ../work/tweets_train.txt
+scala> val pattern = "\"text\":"
+pattern: String = "text":
+scala> val raw_text = spark.read.text(path).filter($"value".contains(pattern)).
+               select(split('value, " ") as "words") 
+raw_text: org.apache.spark.sql.DataFrame = [words: array<string>]
+scala>
+//Step 2b: Assign a category to each line
+scala> val train_cat_df = raw_text.withColumn("category",
+        findCategory(raw_text("words"))).withColumn("label",idxCategory($"category"))
+train_cat_df: org.apache.spark.sql.DataFrame = [words: array<string>, category: string ... 1 more field]
+//Step 2c: Examine categories
+scala> train_cat_df.groupBy($"category").agg(count("category")).show()
++--------+---------------+                                                      
+|category|count(category)|
++--------+---------------+
+| General|            146|
+|resource|              1|
+|  Python|              2|
+|   event|             10|
+|  Hadoop|              6|
++--------+---------------+  
+//Step 3: Build pipeline
+scala> import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.Pipeline
+scala> import org.apache.spark.ml.feature.{StopWordsRemover, CountVectorizer,
+                  IndexToString}
+import org.apache.spark.ml.feature.{StopWordsRemover, CountVectorizer, StringIndexer, IndexToString}
+scala> import org.apache.spark.ml.classification.NaiveBayes
+import org.apache.spark.ml.classification.NaiveBayes
+scala>
+//Step 3a: Define pipeline stages
+//Stop words should be removed first
+scala> val stopw = new StopWordsRemover().setInputCol("words").
+                setOutputCol("processed_words")
+stopw: org.apache.spark.ml.feature.StopWordsRemover = stopWords_2fb707daa92e
+//Terms to term frequency converter
+scala> val cv = new CountVectorizer().setInputCol("processed_words").
+             setOutputCol("features")
+cv: org.apache.spark.ml.feature.CountVectorizer = cntVec_def4911aa0bf
+//Define model
+scala> val model = new NaiveBayes().
+                setFeaturesCol("features").
+                setLabelCol("label")
+model: org.apache.spark.ml.classification.NaiveBayes = nb_f2b6c423f12c
+//Numerical prediction label to category converter
+scala> val lc = new IndexToString().setInputCol("prediction").
+              setOutputCol("predictedCategory").
+              setLabels(labels)
+lc: org.apache.spark.ml.feature.IndexToString = idxToStr_3d71be25382c
+
+//Step 3b: Build pipeline with desired stages
+scala> val p = new Pipeline().setStages(Array(stopw,cv,model,lc))
+p: org.apache.spark.ml.Pipeline = pipeline_956942e70b3f
+
+//Step 4: Process train data and get predictions
+//Step 4a: Execute pipeline with train data
+scala> val resultsDF = p.fit(train_cat_df).transform(train_cat_df)
+resultsDF: org.apache.spark.sql.DataFrame = [words: array<string>, category: string ... 7 more fields]
+//Step 4b: Examine results
+scala> resultsDF.select("category","predictedCategory").show(3)
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+|   event|            event|
+|   event|            event|
+| General|          General|
++--------+-----------------+
+
+//Step 4c: Look for prediction mismatches
+scala> resultsDF.filter("category != predictedCategory").select(
+         "category","predictedCategory").show(3)
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+| General|            event|
+| General|           Hadoop|
+|resource|           Hadoop|
++--------+-----------------+
+
+//Step 5: Evaluate model using test data
+//Step5a: Prepare test data
+scala> val path = "../work/tweets.json"
+path: String = ../work/tweets.json
+scala> val raw_test_df = spark.read.text(path).filter($"value".contains(pattern)).
+               select(split('value, " ") as "words")
+raw_test_df: org.apache.spark.sql.DataFrame = [words: array<string>]
+scala> val test_cat_df = raw_test_df.withColumn("category",
+        findCategory(raw_test_df("words")))withColumn("label",idxCategory($"category"))
+test_cat_df: org.apache.spark.sql.DataFrame = [words: array<string>, category: string ... 1 more field]
+scala> test_cat_df.groupBy($"category").agg(count("category")).show()
++--------+---------------+                                                      
+|category|count(category)|
++--------+---------------+
+| General|              6|
+|   event|             11|
++--------+---------------+
+
+//Step 5b: Run predictions on test data
+scala> val testResultsDF = p.fit(test_cat_df).transform(test_cat_df)
+testResultsDF: org.apache.spark.sql.DataFrame = [words: array<string>, category: string ... 7 more fields]
+//Step 5c:: Examine results
+scala> testResultsDF.select("category","predictedCategory").show(3)
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+| General|            event|
+|   event|          General|
+|   event|          General|
++--------+-----------------+
+
+//Step 5d: Look for prediction mismatches
+scala> testResultsDF.filter("category != predictedCategory").select(
+         "category","predictedCategory").show()
++--------+-----------------+
+|category|predictedCategory|
++--------+-----------------+
+|   event|          General|
+|   event|          General|
++--------+-----------------+
+
+Example 9: Dimensionality reduction
+------------------------------------
+scala> import scala.util.Random
+import scala.util.Random
+scala> import org.apache.spark.mllib.linalg.{Vector, Vectors}
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
+scala> import org.apache.spark.mllib.linalg.distributed.RowMatrix
+import org.apache.spark.mllib.linalg.distributed.RowMatrix
+//Create a RowMatrix of 6 rows and 5 columns
+scala> var vlist: Array[Vector] = Array()
+vlist: Array[org.apache.spark.mllib.linalg.Vector] = Array()
+
+scala> for (i <- 1 to 6) vlist = vlist :+ Vectors.dense(
+       Array.fill(5)(Random.nextInt*1.0))
+scala> val rows_RDD = sc.parallelize(vlist)
+rows_RDD: org.apache.spark.rdd.RDD[org.apache.spark.mllib.linalg.Vector] = ParallelCollectionRDD[0] at parallelize at <console>:29
+
+scala> val row_matrix = new RowMatrix(rows_RDD)
+row_matrix: org.apache.spark.mllib.linalg.distributed.RowMatrix = org.apache.spark.mllib.linalg.distributed.RowMatrix@348a6639
+
+
+//SVD example for top 3 singular values
+scala> val SVD_result = row_matrix.computeSVD(3)
+SVD_result: org.apache.spark.mllib.linalg.SingularValueDecomposition[org.apache.spark.mllib.linalg.distributed.RowMatrix,org.apache.spark.mllib.linalg.Matrix] =
+SingularValueDecomposition(null,[4.933482776606544E9,3.290744495921952E9,2.971558550447048E9],-0.678871347405378    0.054158900880961904  -0.23905281217240534
+0.2278187940802       -0.6393277579229861   0.078663353163388
+0.48824560481341733   0.3139021297613471    -0.7800061948839081
+-0.4970903877201546   2.366428606359744E-4  -0.3665502780139027
+0.041829015676406664  0.6998515759330556    0.4403374382132576    )
+
+scala> SVD_result.s   //Show the singular values
+res1: org.apache.spark.mllib.linalg.Vector = [4.933482776606544E9,3.290744495921952E9,2.971558550447048E9]
+
+
+//PCA example to compute top 2 principal components
+scala> val PCA_result = row_matrix.computePrincipalComponents(2)
+PCA_result: org.apache.spark.mllib.linalg.Matrix =
+-0.663822435334425    0.24038790854106118
+0.3119085619707716    -0.30195355896094916
+0.47440026368044447   0.8539858509513869
+-0.48429601343640094  0.32543904517535094
+-0.0495437635382354   -0.12583837216152594

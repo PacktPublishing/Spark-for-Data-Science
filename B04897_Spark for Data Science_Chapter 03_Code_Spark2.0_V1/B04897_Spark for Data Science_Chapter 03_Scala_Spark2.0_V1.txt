@@ -1,0 +1,227 @@
+//Chapter 3 Introduction to DataFrames - Scala example code
+//Creating DataFrames from RDDs
+//Create a list of colours
+Scala> val colors = List("white","green","yellow","red","brown","pink")
+//Distribute a local collection to form an RDD
+//Apply map function on that RDD to get another RDD containing colour, length tuples
+Scala> val color_df = sc.parallelize(colors).map(x
+          => (x,x.length)).toDF("color","length")
+
+Scala> color_df
+res0: org.apache.spark.sql.DataFrame = [color: string, length: int]
+
+Scala> color_df.dtypes   //Note the implicit type inference  
+res1: Array[(String, String)] = Array((color,StringType), (length,IntegerType))
+
+Scala> color_df.show() ()//Final output as expected. Order need not be the same as shown
++------+------+
+| color|length|
++------+------+
+| white|     5|
+| green|     5|
+|yellow|     6|
+|   red|     3|
+| brown|     5|
+|  pink|     4|
++------+------+
+//Creating DataFrames from JSON
+//Pass the source json data file path
+//Note: SQLCONTEXT is deprecated in Spark 2+ so use spark as entry point
+// or create sqlContext as shown
+//val sqlContext = new org.apache.spark.sql.SQLContext(sc)
+
+Scala> val df = spark.read.json("./authors.json")
+Scala> df.show() //json parsed; Column names and data types inferred implicitly
++----------+---------+
+|first_name|last_name|
++----------+---------+
+|      Mark|    Twain|
+|   Charles|  Dickens|
+|    Thomas|    Hardy|
++----------+---------+
+
+
+//The following example assumes MYSQL is already running and the required library is imported
+//Launch shell with driver-class-path as a command line argument
+spark-shell --driver-class-path /usr/share/java/mysql-connector-java.jar
+//Pass the connection parameters
+scala> val peopleDF = sqlContext.read.format("jdbc").options(
+           Map("url" -> "jdbc:mysql://localhost",
+               "dbtable" -> "test.people",
+               "user" -> "root",
+               "password" -> "mysql")).load()
+peopleDF: org.apache.spark.sql.DataFrame = [first_name: string, last_name: string, gender: string, dob: date, occupation: string, person_id: int]
+//Retrieve table data as a DataFrame
+scala> peopleDF.show()
++----------+---------+------+----------+----------+---------+
+|first_name|last_name|gender|       dob|occupation|person_id|
++----------+---------+------+----------+----------+---------+
+|    Thomas|    Hardy|     M|1840-06-02|    Writer|      101|
+|     Emily|   Bronte|     F|1818-07-30|    Writer|      102|
+| Charlotte|   Bronte|     F|1816-04-21|    Writer|      103|
+|   Charles|  Dickens|     M|1812-02-07|    Writer|      104|
++----------+---------+------+----------+----------+---------+
+	
+//Creating DataFrames from Apache Parquet
+//Write DataFrame contents into Parquet format
+scala> peopleDF.write.parquet("writers.parquet")
+//Read Parquet data into another DataFrame
+scala> val writersDF = sqlContext.read.parquet("writers.parquet") 
+writersDF: org.apache.spark.sql.DataFrame = [first_name: string, last_name: string, gender: string, dob: date, occupation: string, person_id: int]
+
+//DataFrame operations
+//Create a local collection of colors first
+Scala> val colors = List("white","green","yellow","red","brown","pink")
+//Distribute a local collection to form an RDD
+//Apply map function on that RDD to get another RDD containing color, length tuples and convert that RDD to a DataFrame
+Scala> val color_df = sc.parallelize(colors).map(x
+          => (x,x.length)).toDF("color","length")
+//Check the object type
+Scala> color_df
+res0: org.apache.spark.sql.DataFrame = [color: string, length: int]
+//Check the schema
+Scala> color_df.dtypes
+res1: Array[(String, String)] = Array((color,StringType), (length,IntegerType))
+//Check row count
+Scala> color_df.count()
+res4: Long = 6
+//Look at the table contents. You can limit displayed rows by passing parameter to show
+Scala> color_df.show()
++------+------+
+| color|length|
++------+------+
+| white|     5|
+| green|     5|
+|yellow|     6|
+|   red|     3|
+| brown|     5|
+|  pink|     4|
++------+------+
+//List out column names
+Scala> color_df.columns
+res5: Array[String] = Array(color, length)
+//Drop a column. The source DataFrame color_df remains the same.
+//Spark returns a new DataFrame which is being passed to show
+Scala> color_df.drop("length").show()
++------+
+| color|
++------+
+| white|
+| green|
+|yellow|
+|   red|
+| brown|
+|  pink|
++------+
+//Convert to JSON format
+Scala> color_df.toJSON.first()
+res9: String = {“color”:”white”,”length”:5}
+
+
+//filter operation is similar to WHERE clause in SQL
+//You specify conditions to select only desired columns and rows
+//Output of filter operation is another DataFrame object that is usually passed on to some more operations
+//The following example selects the colors having a length of four or five only and label the column as “mid_length”
+filter
+------
+Scala> color_df.filter(color_df("length").between(4,5)).select(
+         color_df("color").alias("mid_length")).show()
++----------+
+|mid_length|
++----------+
+|     white|
+|     green|
+|     brown|
+|      pink|
++----------+
+
+
+//This example uses multiple filter criteria. Notice the not equal to operator having double equal to symbols 
+Scala> color_df.filter(color_df("length") > 4).filter(color_df("color")!== "white").show()
++------+------+
+| color|length|
++------+------+
+| green|     5|
+|yellow|     6|
+| brown|     5|
++------+------+
+//Sort the data on one or more columns
+sort
+----
+//A simple single column sorting in default (ascending) order
+Scala> color_df.sort("color").show()
++------+------+                                                                 
+| color|length|
++------+------+
+| brown|     5|
+| green|     5|
+|  pink|     4|
+|   red|     3|
+| white|     5|
+|yellow|     6|
++------+------+
+//First filter colors of length more than 4 and then sort on multiple columns
+//The filtered rows are sorted first on the column length in default ascending order. Rows with same length are sorted on color in descending order 
+Scala> color_df.filter(color_df("length")>=4).sort($"length", $"color".desc).show()
++------+------+
+| color|length|
++------+------+
+|  pink|     4|
+| white|     5|
+| green|     5|
+| brown|     5|
+|yellow|     6|
++------+------+
+//You can use orderBy instead, which is an alias to sort.
+scala> color_df.orderBy("length","color").take(4)
+res19: Array[org.apache.spark.sql.Row] = Array([red,3], [pink,4], [brown,5], [green,5])
+//Alternative syntax, for single or multiple columns
+scala> color_df.sort(color_df("length").desc, color_df("color").asc).show()
++------+------+
+| color|length|
++------+------+
+|yellow|     6|
+| brown|     5|
+| green|     5|
+| white|     5|
+|  pink|     4|
+|   red|     3|
++------+------+
+//All the examples until now have been acting on one row at a time, filtering or transforming or reordering.
+//The following example deals with regrouping the data. 
+//These operations require “wide dependency” and often involve shuffling.
+groupBy
+-------
+Scala> color_df.groupBy("length").count().show()
++------+-----+
+|length|count|
++------+-----+
+|     3|    1|
+|     4|    1|
+|     5|    3|
+|     6|    1|
++------+-----+
+//Data often contains missing information or null values. 
+//The following json file has names of famous authors. Firstname data is missing in one row.
+dropna
+------
+Scala> val df1 = sqlContext.read.json("./authors_missing.json")
+Scala> df1.show()
++----------+---------+
+|first_name|last_name|
++----------+---------+
+|      Mark|    Twain|
+|   Charles|  Dickens|
+|      null|    Hardy|
++----------+---------+
+//Let us drop the row with incomplete information
+Scala> val df2 = df1.na.drop()
+Scala> df2.show()  //Unwanted row is dropped
++----------+---------+
+|first_name|last_name|
++----------+---------+
+|      Mark|    Twain|
+|   Charles|  Dickens|
++----------+---------+
+
+

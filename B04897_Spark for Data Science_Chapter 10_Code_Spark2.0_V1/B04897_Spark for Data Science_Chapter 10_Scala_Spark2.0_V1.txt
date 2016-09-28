@@ -1,0 +1,346 @@
+//DATA ACQUISITION AND DATA CLEANSING
+--------------------------------------
+//Load tab delimited file
+scala> val fp = "<YourPath>/Oscars.txt"
+scala> val init_data = spark.read.options(Map("header"->"true", "sep" -> "\t","inferSchema"->"true")).csv(fp)
+//Look at data
+>>> init_data.show(4)
++---------+-----------------+-------------+--------------+-------------+-------------+--------------------+---------------+
+| _unit_id|       birthplace|date_of_birth|race_ethnicity|year_of_award|        award|               movie|         person|
++---------+-----------------+-------------+--------------+-------------+-------------+--------------------+---------------+
+|670454353|Chisinau, Moldova|  30-Sep-1895|         White|         1927|Best Director| Two Arabian Knights|Lewis Milestone|
+|670454354|Glasgow, Scotland|   2-Feb-1886|         White|         1930|Best Director|     The Divine Lady|    Frank Lloyd|
+|670454355|Chisinau, Moldova|  30-Sep-1895|         White|         1931|Best Director|All Quiet on the ...|Lewis Milestone|
+|670454356|      Chicago, Il|  23-Feb-1899|         White|         1932|Best Director|              Skippy|  Norman Taurog|
++---------+-----------------+-------------+--------------+-------------+-------------+--------------------+---------------+
+//Select columns of interest and ignore the rest
+>>> val awards = init_data.select("birthplace", "date_of_birth",
+        "race_ethnicity","year_of_award","award").toDF(
+         "birthplace","date_of_birth","race","award_year","award")
+awards: org.apache.spark.sql.DataFrame = [birthplace: string, date_of_birth: string ... 3 more fields]
+//register temporary view of this dataset
+scala> awards.createOrReplaceTempView("awards")
+
+//Explore data
+>>> awards.select("award").distinct().show(10,false) //False => do not truncate
++-----------------------+                                                       
+|award                  |
++-----------------------+
+|Best Supporting Actress|
+|Best Director          |
+|Best Actress           |
+|Best Actor             |
+|Best Supporting Actor  |
++-----------------------+
+//Check DOB quality. Note that length varies based on month name
+scala> spark.sql("SELECT distinct(length(date_of_birth)) FROM awards ").show()
++---------------------+                                                         
+|length(date_of_birth)|
++---------------------+
+|                   15|
+|                    9|
+|                    4|
+|                    8|
+|                   10|
+|                   11|
++---------------------+
+
+//Look at the value with unexpected length 4.
+scala> spark.sql("SELECT date_of_birth FROM awards WHERE length(date_of_birth) = 4").show()
++-------------+
+|date_of_birth|
++-------------+
+|         1972|
++-------------+
+
+//This is an invalid date. We can either drop this record or give some meaningful value like 01-01-1972
+
+//UDF to clean date
+//This function takes 2 digit year and makes it 4 digit
+// Any exception returns an empty string
+scala> def fncleanDate(s:String) : String = { 
+  var cleanedDate = ""
+  val dateArray: Array[String] = s.split("-")
+  try{    //Adjust year
+     var yr = dateArray(2).toInt
+     if (yr < 100) {yr = yr + 1900 } //make it 4 digit
+     cleanedDate = "%02d-%s-%04d".format(dateArray(0).toInt,
+                dateArray(1),yr)
+     } catch { case e: Exception => None }
+     cleanedDate }
+fncleanDate: (s: String)String
+fncleanBirthplace: (s: String)String
+
+//UDF to clean birthplace
+// Data explorartion showed that 
+// A. Country is omitted for USA
+// B. New York City does not have State code as well
+//This function appends country as USA if
+// A. the string contains New York City  (OR)
+// B. if the last component is of length 2 (eg CA, MA)
+scala> def fncleanBirthplace(s: String) : String = {
+        var cleanedBirthplace = ""
+        var strArray : Array[String] =  s.split(" ")
+        if (s == "New York City")
+           strArray = strArray ++ Array ("USA")
+        //Append country if last element length is 2
+        else if (strArray(strArray.length-1).length == 2)
+            strArray = strArray ++ Array("USA")
+        cleanedBirthplace = strArray.mkString(" ")
+        cleanedBirthplace }
+
+//Register UDFs
+scala> spark.udf.register("fncleanDate",fncleanDate(_:String))
+res10: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function1>,StringType,Some(List(StringType)))
+scala> spark.udf.register("fncleanBirthplace", fncleanBirthplace(_:String))
+res11: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function1>,StringType,Some(List(StringType)))
+
+//Perform the following cleanup operations:
+// 1. Call udfs fncleanData and fncleanBirthplace to fix birthplace and country
+// 2. Subtract birth year from award_year to get age at the time of receiving the award
+// 3. Retain race and award as they are 
+//Note 1: Use 3 double quotes for multiline string in scala
+//Note 2: Note that cleaned_df is declared as var, because we intend to reuse variable name
+//Note 3: substring_index returns part of first argument that starts with second argument.
+// -1 indicates first occurrence from right side
+
+scala> var cleaned_df = spark.sql (
+            """SELECT fncleanDate (date_of_birth) dob,
+               fncleanBirthplace(birthplace) birthplace,
+               substring_index(fncleanBirthplace(birthplace),' ',-1) country,
+               (award_year - substring_index(fncleanDate(date_of_birth),
+                         '-',-1)) age,
+               race, award FROM awards""")
+cleaned_df: org.apache.spark.sql.DataFrame = [dob: string, birthplace: string ... 4 more fields]
+
+//Missing value treatment
+--------------------------
+// Drop rows with incomplete information
+scala> cleaned_df = cleaned_df.na.drop
+cleaned_df: org.apache.spark.sql.DataFrame = [dob: string, birthplace: string ... 4 more fields]
+
+//DATA EXPLORATION
+------------------
+scala> cleaned_df.groupBy("award","country").count().sort("country","award","count").show(4,false)
++-----------------------+---------+-----+                                       
+|award                  |country  |count|
++-----------------------+---------+-----+
+|Best Actor             |Australia|1    |
+|Best Actress           |Australia|1    |
+|Best Supporting Actor  |Australia|1    |
+|Best Supporting Actress|Australia|1    |
++-----------------------+---------+-----+
+scala>
+//Re-register data as table
+scala> cleaned_df.createOrReplaceTempView("awards")
+
+//Find out levels (distinct values) in each categorical variable
+scala> spark.sql("SELECT count(distinct country) country_count, count(distinct race) race_count, count(distinct award) award_count from awards").show()
++-------------+----------+-----------+                                          
+|country_count|race_count|award_count|
++-------------+----------+-----------+
+|           34|         6|          5|
++-------------+----------+-----------+
+
+
+//DATA PREPARATION
+-------------------
+
+//Distinct levels in race and award are not many. 
+//Country has too many values. Retain top ones and bundle the rest
+//Check out top 6 countries with most awards. 
+scala> val top_countries_df = spark.sql("SELECT country, count(*) freq FROM awards GROUP BY country ORDER BY freq DESC LIMIT 6")
+top_countries_df: org.apache.spark.sql.DataFrame = [country: string, freq: bigint]
+scala> top_countries_df.show()
++-------+----+                                                                  
+|country|freq|
++-------+----+
+|    USA| 289|
+|England|  57|
+| France|   9|
+| Canada|   8|
+|  Italy|   7|
+|Austria|   7|
++-------+----+
+//Prepare top_countries list
+scala> val top_countries = top_countries_df.select("country").collect().map(x => x(0).toString)
+top_countries: Array[String] = Array(USA, England, New York City, France, Canada, Italy)
+
+//UDF to fix country. Retain top 6 and bundle the rest into "Others"
+scala> import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.functions.udf
+scala > val setCountry = udf ((s: String) => 
+        { if (top_countries.contains(s)) {s} else {"Others"}})
+setCountry: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function1>,StringType,Some(List(StringType)))
+//Apply udf to overwrite country
+scala> cleaned_df = cleaned_df.withColumn("country", setCountry(cleaned_df("country")))
+cleaned_df: org.apache.spark.sql.DataFrame = [dob: string, birthplace: string ... 4 more fields]
+
+//Define pipeline to convert categorical labels to numerical labels
+scala> import org.apache.spark.ml.feature.{StringIndexer, Bucketizer, VectorAssembler}
+import org.apache.spark.ml.feature.{StringIndexer, Bucketizer, VectorAssembler}
+scala> import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.Pipeline
+//Race
+scala> val raceIdxer = new StringIndexer().
+           setInputCol("race").setOutputCol("raceIdx")
+raceIdxer: org.apache.spark.ml.feature.StringIndexer = strIdx_80eddaa022e6
+//Award (prediction target)
+scala> val awardIdxer = new StringIndexer().
+         setInputCol("award").setOutputCol("awardIdx")
+awardIdxer: org.apache.spark.ml.feature.StringIndexer = strIdx_256fe36d1436
+//Country
+scala> val countryIdxer = new StringIndexer().
+         setInputCol("country").setOutputCol("countryIdx")
+countryIdxer: org.apache.spark.ml.feature.StringIndexer = strIdx_c73a073553a2
+
+//Convert continuous variable age to buckets
+scala> val splits = Array(Double.NegativeInfinity, 35.0, 45.0, 55.0, 
+          Double.PositiveInfinity)
+splits: Array[Double] = Array(-Infinity, 35.0, 45.0, 55.0, Infinity)
+
+scala> val bucketizer = new Bucketizer().setSplits(splits).
+                 setInputCol("age").setOutputCol("age_buckets")
+bucketizer: org.apache.spark.ml.feature.Bucketizer = bucketizer_a25c5d90ac14
+
+//Prepare numerical feature vector by clubbing all individual features
+scala> val assembler = new VectorAssembler().setInputCols(Array("raceIdx", 
+          "age_buckets","countryIdx")).setOutputCol("features")
+assembler: org.apache.spark.ml.feature.VectorAssembler = vecAssembler_8cf17ee0cd60
+
+//Define data preparation pipeline
+scala> val dp_pipeline = new Pipeline().setStages(
+          Array(raceIdxer,awardIdxer, countryIdxer, bucketizer, assembler))
+dp_pipeline: org.apache.spark.ml.Pipeline = pipeline_06717d17140b
+
+//Transform dataset
+scala> cleaned_df = dp_pipeline.fit(cleaned_df).transform(cleaned_df)
+cleaned_df: org.apache.spark.sql.DataFrame = [dob: string, birthplace: string ... 9 more fields]
+
+//Split data into train and test datasets
+scala> val Array(trainData, testData) = 
+        cleaned_df.randomSplit(Array(0.7, 0.3))
+trainData: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [dob: string, birthplace: string ... 9 more fields]
+testData: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [dob: string, birthplace: string ... 9 more fields]
+
+//BUILD MODEL
+//We'll be building multiple models using the same train and test datasets
+ 
+scala> import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.Pipeline
+scala> import org.apache.spark.ml.classification.DecisionTreeClassifier
+import org.apache.spark.ml.classification.DecisionTreeClassifier
+
+//Use Decision tree classifier
+scala> val dtreeModel = new DecisionTreeClassifier().
+           setLabelCol("awardIdx").setFeaturesCol("features").
+           fit(trainData)
+dtreeModel: org.apache.spark.ml.classification.DecisionTreeClassificationModel = DecisionTreeClassificationModel (uid=dtc_76c9e80680a7) of depth 5 with 39 nodes
+
+//Run predictions using testData
+scala> val dtree_predictions = dtreeModel.transform(testData)
+dtree_predictions: org.apache.spark.sql.DataFrame = [dob: string, birthplace: string ... 12 more fields]
+
+//Examine results. Your results may vary due to randomSplit
+scala> dtree_predictions.select("award","awardIdx","prediction").show(4)
++--------------------+--------+----------+
+|               award|awardIdx|prediction|
++--------------------+--------+----------+
+|       Best Director|     1.0|       1.0|
+|        Best Actress|     0.0|       0.0|
+|        Best Actress|     0.0|       0.0|
+|Best Supporting A...|     4.0|       3.0|
++--------------------+--------+----------+
+
+//Compute prediction mismatch count
+scala> dtree_predictions.filter(dtree_predictions("awardIdx") =!= dtree_predictions("prediction")).count()
+res10: Long = 88
+scala> testData.count
+res11: Long = 126
+//Predictions match with DecisionTreeClassifier model is about 30% ((126-88)*100/126)
+
+
+//Train Random forest
+scala> import org.apache.spark.ml.classification.RandomForestClassifier
+import org.apache.spark.ml.classification.RandomForestClassifier
+scala> import org.apache.spark.ml.classification.RandomForestClassificationModel
+import org.apache.spark.ml.classification.RandomForestClassificationModel
+scala> import org.apache.spark.ml.feature.{StringIndexer, IndexToString, VectorIndexer}
+import org.apache.spark.ml.feature.{StringIndexer, IndexToString, VectorIndexer}
+
+
+//Build model
+scala> val RFmodel = new RandomForestClassifier().
+        setLabelCol("awardIdx").
+        setFeaturesCol("features").
+        setNumTrees(6).fit(trainData)
+RFmodel: org.apache.spark.ml.classification.RandomForestClassificationModel = RandomForestClassificationModel (uid=rfc_c6fb8d764ade) with 6 trees
+//Run predictions on the same test data using Random Forest model
+scala> val RF_predictions = RFmodel.transform(testData)
+RF_predictions: org.apache.spark.sql.DataFrame = [dob: string, birthplace: string ... 12 more fields]
+//Check results
+scala> RF_predictions.filter(RF_predictions("awardIdx") =!= RF_predictions("prediction")).count()
+res29: Long = 87 //Roughly the same as DecisionTreeClassifier
+
+//Try OneVsRest Logistic regression technique
+scala> import org.apache.spark.ml.classification.{LogisticRegression, OneVsRest}
+import org.apache.spark.ml.classification.{LogisticRegression, OneVsRest}
+//This model requires a base classifier
+scala> val classifier = new LogisticRegression().
+            setLabelCol("awardIdx").
+            setFeaturesCol("features").
+            setMaxIter(30).
+            setTol(1E-6).
+            setFitIntercept(true)
+classifier: org.apache.spark.ml.classification.LogisticRegression = logreg_82cd24368c87
+
+//Fit OneVsRest model
+scala> val ovrModel = new OneVsRest().
+           setClassifier(classifier).
+           setLabelCol("awardIdx").
+           setFeaturesCol("features").
+           fit(trainData)
+ovrModel: org.apache.spark.ml.classification.OneVsRestModel = oneVsRest_e696c41c0bcf
+//Run predictions
+scala> val OVR_predictions = ovrModel.transform(testData)
+predictions: org.apache.spark.sql.DataFrame = [dob: string, birthplace: string ... 10 more fields]
+//Check results
+scala> OVR_predictions.filter(OVR_predictions("awardIdx") =!= OVR_predictions("prediction")).count()         
+res32: Long = 86 //Roughly the same as other models
+
+//MODEL EVALUATION
+//Evaluate metrics on each of the predictions
+scala> import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+//F1
+scala> val f1_eval = new MulticlassClassificationEvaluator().
+                     setLabelCol("awardIdx") //Default metric is F1
+f1_eval: org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator = mcEval_e855a949bb0e
+
+//WeightedPrecision
+scala> val wp_eval = new MulticlassClassificationEvaluator().
+                     setMetricName("weightedPrecision").setLabelCol("awardIdx")
+wp_eval: org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator = mcEval_44fd64e29d0a
+
+//WeightedRecall
+scala> val wr_eval = new MulticlassClassificationEvaluator().
+                     setMetricName("weightedRecall").setLabelCol("awardIdx")
+wr_eval: org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator = mcEval_aa341966305a
+//Accuracy
+scala> val acc_eval = new MulticlassClassificationEvaluator().
+                    setMetricName("accuracy").setLabelCol("awardIdx")
+acc_eval: org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator = mcEval_ea26e18c6cec
+
+//Compute measures for all models
+scala> val f1_eval_list = List (dtree_predictions, RF_predictions, OVR_predictions) map (
+           x => f1_eval.evaluate(x))
+f1_eval_list: List[Double] = List(0.2330854098674473, 0.2330854098674473, 0.2330854098674473)
+scala> val wp_eval_list = List (dtree_predictions, RF_predictions, OVR_predictions) map (
+           x => wp_eval.evaluate(x))
+wp_eval_list: List[Double] = List(0.2661599224979506, 0.2661599224979506, 0.2661599224979506)
+
+scala> val wr_eval_list = List (dtree_predictions, RF_predictions, OVR_predictions) map (
+           x => wr_eval.evaluate(x))
+wr_eval_list: List[Double] = List(0.31746031746031744, 0.31746031746031744, 0.31746031746031744)
+
+

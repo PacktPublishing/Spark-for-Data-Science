@@ -1,0 +1,415 @@
+//Chapter 4 Data analysis on Spark - Python example code
+
+//DATA ACQUISITION
+// From RDD: Create an RDD and convert to DataFrame
+>>> employees = sc.parallelize([(1, "John", 25), (2, "Ray", 35), (3, "Mike", 24), (4, "Jane", 28), (5, "Kevin", 26), (6, "Vincent", 35), (7, "James", 38), (8, "Shane", 32), (9, "Larry", 29), (10, "Kimberly", 29), (11, "Alex", 28), (12, "Garry", 25), (13, "Max", 31)]).toDF(["emp_id","name","age"])
+>>> 
+
+// From JSON: reading a JSON file
+>>> salary = sqlContext.read.json("./salary.json")
+>>> designation = sqlContext.read.json("./designation.json")
+
+//DATA CONSOLIDATION
+// Creating the final data data frame using the join operation
+>>> final_data = employees.join(salary, employees.emp_id == salary.e_id).join(designation, employees.emp_id == designation.id).select("emp_id", "name", "age", "role", "salary")
+
+>>> final_data.show(5)
++------+-----+---+---------+------+
+|emp_id| name|age|     role|salary|
++------+-----+---+---------+------+
+|     1| John| 25|Associate| 10000|
+|     2|  Ray| 35|  Manager| 12000|
+|     3| Mike| 24|  Manager| 12000|
+|     4| Jane| 28|Associate|  null|
+|     5|Kevin| 26|  Manager|   120|
++------+-----+---+---------+------+
+only showing top 5 rows
+
+//DATA CLEANSING
+//Missing value treatment
+// Dropping rows with missing value(s)
+>>> clean_data = final_data.na.drop()
+>>>
+// Replacing missing value by mean
+>>> import math
+>>> from pyspark.sql import functions as F
+
+>>> mean_salary = math.floor(salary.select(F.mean('salary')).collect()[0][0])
+>>> clean_data = final_data.na.fill({"salary" : mean_salary})
+>>>
+
+//Another example for missing value treatment
+>>> authors = [['Thomas','Hardy','June 2, 1840'],
+	['Charles','Dickens','7 February 1812'],
+        ['Mark','Twain',None],
+        ['Jane','Austen','16 December 1775'],
+        ['Emily',None,None]]
+>>> df1 = sc.parallelize(authors).toDF(
+	["FirstName","LastName","Dob"])
+>>> df1.show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|    June 2, 1840|
+|  Charles| Dickens| 7 February 1812|
+|     Mark|   Twain|            null|
+|     Jane|  Austen|16 December 1775|
+|    Emily|    null|            null|
++---------+--------+----------------+
+
+//Drop rows with missing values
+>>> df1.na.drop().show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|    June 2, 1840|
+|  Charles| Dickens| 7 February 1812|
+|     Jane|  Austen|16 December 1775|
++---------+--------+----------------+
+
+//Drop rows with at least 2 missing values
+>>> df1.na.drop(thresh=2).show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|    June 2, 1840|
+|  Charles| Dickens| 7 February 1812|
+|     Mark|   Twain|            null|
+|     Jane|  Austen|16 December 1775|
++---------+--------+----------------+
+
+// Fill all missing values with a given string
+>>> df1.na.fill('Unknown').show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|    June 2, 1840|
+|  Charles| Dickens| 7 February 1812|
+|     Mark|   Twain|         Unknown|
+|     Jane|  Austen|16 December 1775|
+|    Emily| Unknown|         Unknown|
++---------+--------+----------------+
+
+//Fill missing values in each column with a given string
+>>> df1.na.fill({'LastName':'--','Dob':'Unknown'}).show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|    June 2, 1840|
+|  Charles| Dickens| 7 February 1812|
+|     Mark|   Twain|         Unknown|
+|     Jane|  Austen|16 December 1775|
+|    Emily|      --|         Unknown|
++---------+--------+----------------+
+
+//Outlier treatment
+// Identify outliers and replace them with mean
+//The following example reuses the clean_data dataset and mean_salary computed in previous examples
+
+>>> mean_salary 
+20843.0
+>>>
+//Compute deviation for each row 
+>>> devs = final_data.select(((final_data.salary - mean_salary) ** 2).alias("deviation"))
+//Compute standard deviation
+>>> stddev = math.floor(math.sqrt(devs.groupBy().
+          avg("deviation").first()[0]))
+//check standard deviation value
+>>> round(stddev,2)
+30351.0
+>>>
+//Replace outliers beyond 2 standard deviations with the mean salary
+>>> no_outlier = final_data.select(final_data.emp_id, final_data.name, final_data.age, final_data.salary, final_data.role, F.when(final_data.salary.between(mean_salary-(2*stddev), mean_salary+(2*stddev)), final_data.salary).otherwise(mean_salary).alias("updated_salary"))
+>>>
+//Observe modified values
+>>> no_outlier.filter(no_outlier.salary != no_outlier.updated_salary).show()
++------+----+---+------+-------+--------------+
+|emp_id|name|age|salary|   role|updated_salary|
++------+----+---+------+-------+--------------+
+|    13| Max| 31|120000|Manager|       20843.0|
++------+----+---+------+-------+--------------+
+>>> 
+//Duplicate values treatment
+
+// Deleting the duplicate rows
+>>> authors = [['Thomas','Hardy','June 2,1840'],
+    ['Thomas','Hardy','June 2,1840'],
+    ['Thomas','H',None],
+    ['Jane','Austen','16 December 1775'],
+    ['Emily',None,None]]
+>>> df1 = sc.parallelize(authors).toDF(
+	["FirstName","LastName","Dob"])
+>>> df1.show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|    June 2, 1840|
+|   Thomas|   Hardy|    June 2, 1840|
+|   Thomas|       H|            null|
+|     Jane|  Austen|16 December 1775|
+|    Emily|    null|            null|
++---------+--------+----------------+
+
+// Drop duplicated rows
+>>> df1.dropDuplicates().show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|    Emily|    null|            null|
+|     Jane|  Austen|16 December 1775|
+|   Thomas|       H|            null|
+|   Thomas|   Hardy|    June 2, 1840|
++---------+--------+----------------+
+
+// Drop duplicates based on a sub set of columns
+>>> df1.dropDuplicates(subset=["FirstName"]).show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|    Emily|    null|            null|
+|   Thomas|   Hardy|    June 2, 1840|
+|     Jane|  Austen|16 December 1775|
++---------+--------+----------------+
+
+//DATA TRANSFORMATIONS
+
+// Merging columns
+//Create a udf to concatenate two column values
+>>> import pyspark.sql.functions
+>>> concat_func = pyspark.sql.functions.udf(lambda name, age: name + "_" + str(age))
+//Apply the udf to create merged column
+>>> concat_df = final_data.withColumn("name_age", concat_func(final_data.name, final_data.age))
+>>> concat_df.show(4)
++------+----+---+---------+------+--------+
+|emp_id|name|age|     role|salary|name_age|
++------+----+---+---------+------+--------+
+|     1|John| 25|Associate| 10000| John_25|
+|     2| Ray| 35|  Manager| 12000|  Ray_35|
+|     3|Mike| 24|  Manager| 12000| Mike_24|
+|     4|Jane| 28|Associate|  null| Jane_28|
++------+----+---+---------+------+--------+
+only showing top 4 rows
+
+// Adding constant to data
+>>> data_new = concat_df.withColumn("age_incremented",concat_df.age + 10)
+>>> data_new.show(4)
++------+----+---+---------+------+--------+---------------+
+|emp_id|name|age|     role|salary|name_age|age_incremented|
++------+----+---+---------+------+--------+---------------+
+|     1|John| 25|Associate| 10000| John_25|             35|
+|     2| Ray| 35|  Manager| 12000|  Ray_35|             45|
+|     3|Mike| 24|  Manager| 12000| Mike_24|             34|
+|     4|Jane| 28|Associate|  null| Jane_28|             38|
++------+----+---+---------+------+--------+---------------+
+only showing top 4 rows
+
+//Replace values in a column
+>>> df1.replace('Emily','Charlotte','FirstName').show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|    June 2, 1840|
+|  Charles| Dickens| 7 February 1812|
+|     Mark|   Twain|            null|
+|     Jane|  Austen|16 December 1775|
+|Charlotte|    null|            null|
++---------+--------+----------------+
+// If the column name argument is omitted in replace, then replacement is applicable to all columns
+
+
+//Append new columns based on existing values in a column
+//Give 'LastName' instead of 'Initial' if you want to overwrite
+>>> df1.withColumn('Initial',df1.LastName.substr(1,1)).show()
++---------+--------+----------------+-------+
+|FirstName|LastName|             Dob|Initial|
++---------+--------+----------------+-------+
+|   Thomas|   Hardy|    June 2, 1840|      H|
+|  Charles| Dickens| 7 February 1812|      D|
+|     Mark|   Twain|            null|      T|
+|     Jane|  Austen|16 December 1775|      A|
+|    Emily|    null|            null|   null|
++---------+--------+----------------+-------+
+
+// Date conversions
+//Create udf for date conversion that converts incoming string to YYYY-MM-DD format
+// The function assumes month is full month name and year is always 4 digits
+// Separator is always a space or comma
+// Month, date and year may come in any order
+
+//Reusing authors data
+>>> authors = [['Thomas','Hardy','June 2, 1840'],
+	['Charles','Dickens','7 February 1812'],
+        ['Mark','Twain',None],
+        ['Jane','Austen','16 December 1775'],
+        ['Emily',None,None]]
+>>> df1 = sc.parallelize(authors).toDF(
+	["FirstName","LastName","Dob"])
+>>>
+// Define udf
+//Note: You may create this in a script file and execute with execfile(filename.py)
+>>> def toDate(s):
+ import re
+ year = month = day = ""
+ if not s:
+  return None
+ mn = [0,'January','February','March','April','May',
+  'June','July','August','September',
+  'October','November','December']
+ //Split the string and remove empty tokens
+ l = [tok for tok in re.split(",| ",s) if tok]
+ //Assign token to year, month or day
+ for a in l:
+  if a in mn:
+   month = "{:0>2d}".format(mn.index(a))
+  elif len(a) == 4:
+   year = a
+  elif len(a) == 1:
+   day = '0' + a
+  else:
+   day = a
+ return year + '-' + month + '-' + day
+>>>
+//Register the udf
+>>> from pyspark.sql.functions import udf
+>>> from pyspark.sql.types import StringType
+>>> toDateUDF = udf(toDate, StringType())
+
+//Apply udf
+>>> df1.withColumn("Dob",toDateUDF("Dob")).show()
++---------+--------+----------+
+|FirstName|LastName|       Dob|
++---------+--------+----------+
+|   Thomas|   Hardy|1840-06-02|
+|  Charles| Dickens|1812-02-07|
+|     Mark|   Twain|      null|
+|     Jane|  Austen|1775-12-16|
+|    Emily|    null|      null|
++---------+--------+----------+
+ 
+//Code related to Statistics section
+//Stratified sampling
+/* ”Sample” function is defined for DataFrames (not RDDs) which takes three parameters:
+withReplacement - Sample with replacement or not (input: True/False)
+fraction - Fraction of rows to generate (input: any number between 0 and 1 as per your requirement of sample size)
+seed - Seed for sampling (input: Any random seed)
+*/
+
+>>> sample1 = data_new.sample(False, 0.6) //With random seed as no seed value specified
+>>> sample2 = data_new.sample(False, 0.6, 10000) //With specific seed value of 10000
+//Note: We only looked at sampling on the DataFrames, there are MLlib library functions such as “sampleByKey” and “sampleByKeyExact” to do stratified sampling on RDDs of Key-Value pairs. Check out spark.util.random package for Bernoulli , Poisson or Random samplers
+
+//Measures of location
+
+>>> mean_age = data_new.agg({'age': 'mean'}).first()[0]
+>>> age_counts = data_new.groupBy("age").agg({"age": "count"}).alias("freq")
+>>> mode_age = age_counts.sort(age_counts["COUNT(age)"].desc(), age_counts.age.asc()).first()[0]
+>>> print(mean_age, mode_age)
+(29.615384615384617, 25)
+>>> age_counts.sort("count(age)",ascending=False).show(2)
++---+----------+                                                                
+|age|count(age)|
++---+----------+
+| 28|         2|
+| 29|         2|
++---+----------+
+only showing top 2 rows
+>>> 
+
+//Measures of spread
+//Reusing data_new created before
+import math
+>>> range_salary = data_new.agg({'salary': 'max'}).first()[0] - data_new.agg({'salary': 'min'}).first()[0]
+>>> mean_salary = data_new.agg({'salary': 'mean'}).first()[0]
+>>> salary_deviations = data_new.select(((data_new.salary - mean_salary) *
+       (data_new.salary - mean_salary)).alias("deviation"))
+>>> stddev_salary = math.sqrt(salary_deviations.agg({'deviation' : 'avg'}).first()[0]) 
+>>> variance_salary = salary_deviations.groupBy().avg("deviation").first()[0]
+>>> print(round(range_salary,2), round(mean_salary,2),
+      round(variance_salary,2), round(stddev_salary,2))
+(119880.0, 20843.33, 921223322.22, 30351.66)
+>>> 
+
+
+//Summary statistics
+>>> import numpy
+>>> from pyspark.mllib.stat import Statistics
+// Create an RDD of number vectors
+//This example creates an RDD with 5 rows with 5 elements each
+>>> observations = sc.parallelize(numpy.random.random_integers(0,100,(5,5)))
+// Compute column summary statistics.
+//Note that the results may vary because of random numbers
+>>> summary = Statistics.colStats(observations)
+>>> print(summary.mean())       // mean value for each column
+>>> print(summary.variance())  // column-wise variance
+>>> print(summary.numNonzeros())// number of nonzeros in each column
+
+//Graphical techniques
+//Histogram
+>>>from random import randint
+>>>
+>>> numRDD = sc.parallelize([randint(0,9) for x in xrange(1,1001)])
+// Generate histogram data for given bucket count
+>>> numRDD.histogram(5)
+([0.0, 1.8, 3.6, 5.4, 7.2, 9], [202, 213, 215, 188, 182])
+//Alternatively, specify ranges
+>>> numRDD.histogram([0,3,6,10])
+([0, 3, 6, 10], [319, 311, 370])
+
+//Inferential statistics
+ 
+//Chi-Square test
+>>> from pyspark.mllib.linalg import Vectors, Matrices
+>>> from pyspark.mllib.stat import Statistics
+>>> import random
+>>>
+
+//Make a vector of frequencies of events
+>>> vec = Vectors.dense( random.sample(xrange(1,101),10))
+>>> vec
+DenseVector([45.0, 40.0, 93.0, 66.0, 56.0, 82.0, 36.0, 30.0, 85.0, 15.0])
+// Get Goodnesss of fit test results
+>>> GFT_Result = Statistics.chiSqTest(vec)
+// Here the ‘goodness of fit test’ is conducted because your input is a vector
+
+//Make a contingency matrix
+>>> mat = Matrices.dense(5,6,random.sample(xrange(1,101),30))
+//Get independense test results
+>>> IT_Result = Statistics.chiSqTest(mat)
+// Here the ‘independence test’ is conducted because your input is a vector
+//Examine the independence test results
+>>> print(IT_Result)
+Chi squared test summary:
+method: pearson
+degrees of freedom = 20 
+statistic = 285.9423808343265 
+pValue = 0.0 
+Very strong presumption against null hypothesis: the occurrence of the outcomes is statistically independent..
+
+
+//Correlation
+>>> from pyspark.mllib.stat import Statistics
+>>> import random 
+// Define two series
+//Number of partitions and cardinality of both Ser_1 and Ser_2 should be the same
+>>> Ser_1 = sc.parallelize(random.sample(xrange(1,101),10))       // Define Series_1
+>>> Ser_2 = sc.parallelize(random.sample(xrange(1,101),10))       // Define Series_2
+
+>>> correlation = Statistics.corr(Ser_1, Ser_2, method = "pearson") //if you are interested in Spearman method, use “spearman” switch instead
+>>> round(correlation,2)
+-0.14
+>>> correlation = Statistics.corr(Ser_1, Ser_2, method ="spearman")
+>>> round(correlation,2)
+-0.19
+//Check on matrix
+//The following statement creates 100 rows of 5 elements each
+>>> data = sc.parallelize([random.sample(xrange(1,51),5) for x in range(100)])
+>>> correlMatrix = Statistics.corr(data, method = "pearson") //method may be spearman as per you requirement
+>>> correlMatrix
+array([[ 1.        ,  0.09889342, -0.14634881,  0.00178334,  0.08389984],
+       [ 0.09889342,  1.        , -0.07068631, -0.02212963, -0.1058252 ],
+       [-0.14634881, -0.07068631,  1.        , -0.22425991,  0.11063062],
+       [ 0.00178334, -0.02212963, -0.22425991,  1.        , -0.04864668],
+       [ 0.08389984, -0.1058252 ,  0.11063062, -0.04864668,  1.        ]])
+>>> 
+
+

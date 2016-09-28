@@ -1,0 +1,442 @@
+_unit_id	birthplace	date_of_birth	race_ethnicity	year_of_award	award	movie	person
+670454353	"Chisinau, Moldova"	30-Sep-1895	White	1927	Best Director	Two Arabian Knights	Lewis Milestone
+670454354	"Glasgow, Scotland"	2-Feb-1886	White	1930	Best Director	The Divine Lady	Frank Lloyd
+670454355	"Chisinau, Moldova"	30-Sep-1895	White	1931	Best Director	All Quiet on the Western Front	Lewis Milestone
+670454356	"Chicago, Il"	23-Feb-1899	White	1932	Best Director	Skippy	Norman Taurog
+670454357	"Salt Lake City, Ut"	23-Apr-1894	White	1933	Best Director	Bad Girl	Frank Borzage
+670454358	"Glasgow, Scotland"	2-Feb-1886	White	1934	Best Director	Cavalcade	Frank Lloyd
+670454359	"Bisacquino, Sicily, Italy"	18-May-1897	White	1935	Best Director	It Happened One Night	Frank Capra
+670454360	"Cape Elizabeth, Me"	1-Feb-1894	White	1936	Best Director	The Informer	John Ford
+670454361	"Bisacquino, Sicily, Italy"	18-May-1897	White	1937	Best Director	Mr. Deeds Goes to Town	Frank Capra
+670454362	"Los Angeles, Ca"	3-Oct-1898	White	1938	Best Director	The Awful Truth	Leo McCarey
+670454363	"Bisacquino, Sicily, Italy"	18-May-1897	White	1939	Best Director	You Can't Take It with You	Frank Capra
+670454364	"Pasadena, Ca"	23-Feb-1883	White	1940	Best Director	Gone with the Wind	Victor Fleming
+670454365	"Cape Elizabeth, Me"	1-Feb-1894	White	1941	Best Director	The Grapes of Wrath	John Ford
+670454366	"Cape Elizabeth, Me"	1-Feb-1894	White	1942	Best Director	How Green Was My Valley	John Ford
+670454367	"Mulhouse, Haut-Rhin, Alsace, France"	1-Jul-02	White	1943	Best Director	Mrs. Miniver	William Wyler
+670454368	"Budapest, Hungary"	24-Dec-1886	White	1944	Best Director	Casablanca	Michael Curtiz
+670454369	"Los Angeles, Ca"	3-Oct-1898	White	1945	Best Director	Going My Way	Leo McCarey
+670454370	New York City	11-Oct-18	White	1962	Best Director	West Side Story	Jerome Robbins
+670454371	"Sucha, Galicia, Austria"	22-Jun-06	White	1946	Best Director	The Lost Weekend	Billy Wilder
+670454372	"Mulhouse, Haut-Rhin, Alsace, France"	1-Jul-02	White	1947	Best Director	The Best Years of Our Lives	William Wyler
+670454373	"Istanbul, Turkey"	7-Sep-09	White	1948	Best Director	Gentleman's Agreement	Elia Kazan
+670454374	"Nevada, Mo"	5-Aug-06	White	1949	Best Director	The Treasure of the Sierra Madre	John Huston
+670454375	"Wilkes-Barre, Pa"	11-Feb-09	White	1950	Best Director	A Letter to Three Wives	Joseph L. Mankiewicz
+670454376	"Wilkes-Barre, Pa"	11-Feb-09	White	1951	Best Director	All About Eve	Joseph L. Mankiewicz
+670454377	"Oakland, Ca"	18-Dec-04	White	1952	Best Director	A Place in the Sun	George Stevens
+670454378	"Cape Elizabeth, Me"	1-Feb-1894	White	1953	Best Director	The Quiet Man	John Ford
+670454379	"Vienna, Austria"	29-Apr-07	White	1954	Best Director	From Here to Eternity	Fred Zinnemann
+670454380	"Istanbul, Turkey"	7-Sep-09	White	1955	Best Director	On the Waterfront	Elia Kazan
+670454381	"Lawrence, Ks"	30-Jan-20	White	1956	Best Director	Marty	Delbert Mann
+670454382	"Oakland, Ca"	18-Dec-04	White	1957	Best Director	Giant	George Stevens
+670454383	"Croydon, Surrey, England"	25-Mar-08	White	1958	Best Director	The Bridge on the River Kwai	David Lean
+670454384	"Chicago, Il"	28-Feb-03	White	1959	Best Director	Gigi	Vincente Minnelli
+670454385	"Mulhouse, Haut-Rhin, Alsace, France"	1-Jul-02	White	1960	Best Director	Ben-Hur	William Wyler
+670454386	"Sucha, Galicia, Austria"	22-Jun-06	White	1961	Best Director	The Apartment	Billy Wilder
+670454387	"Winchester, In"	10-Sep-14	White	1961	Best Director	West Side Story	Robert Wise
+670454388	"Croydon, Surrey, England"	25-Mar-08	White	1963	Best Director	Lawrence of Arabia	David Lean
+670454389	"Shipley, Yorkshire, England"	5-Jun-28	White	1964	Best Director	Tom Jones	Tony Richardson
+670454390	New York City	7-Jul-1899	White	1965	Best Director	My Fair Lady	George Cukor
+670454391	"Winchester, In"	10-Sep-14	White	1966	Best Director	The Sound of Music	Robert Wise
+670454392	"Vienna, Austria"	29-Apr-07	White	1967	Best Director	A Man for All Seasons	Fred Zinnemann
+670454393	"Berlin, Germany"	6-Nov-31	White	1968	Best Director	The Graduate	Mike Nichols
+670454394	"St. Louis Park, Mn"	29-Nov-54	White	2008	Best Director	No Country for Old Men	Joel Coen
+670454395	"London, England"	30-Dec-06	White	1969	Best Director	Oliver!	Carol Reed
+670454396	"London, England"	16-Feb-26	White	1969	Best Director	Midnight Cowboy	John Schlesinger
+670454397	"Tokyo, Japan"	30-May-20	White	1970	Best Director	Patton	Franklin J. Schaffner
+670454398	"Chicago, Il"	29-Aug-35	White	1972	Best Director	The French Connection	William Friedkin
+670454399	"Chicago, Il"	23-Jun-27	White	1973	Best Director	Cabaret	Bob Fosse
+670454400	"Minneapolis, Mn"	20-Dec-21	White	1973	Best Director	The Sting	George Roy Hill
+670454401	"Detroit, Mi"	7-Apr-39	White	1975	Best Director	The Godfather Part II	Francis Ford Coppola
+670454402	"Cáslav, Czechoslovakia"	18-Feb-32	White	1976	Best Director	One Flew over the Cuckoo's Nest	Milos Forman
+670454403	"Oak Park, Il"	21-Dec-35	White	1976	Best Director	Rocky	John G. Avildsen
+670454404	"Brooklyn, Ny"	1-Dec-35	White	1978	Best Director	Annie Hall	Woody Allen
+670454405	New York City	3-Feb-39	White	1979	Best Director	The Deer Hunter	Michael Cimino
+670454406	"Waxahachie, Tx"	29-Sep-32	White	1980	Best Director	Kramer vs. Kramer	Robert Benton
+670454407	"Santa Monica, Ca"	18-Aug-1936 [1]	White	1980	Best Director	Ordinary People	Robert Redford
+670454408	"Richmond, Va"	30-Mar-37	White	1981	Best Director	Reds	Warren Beatty
+670454409	"Cambridge, England"	29-Aug-23	White	1982	Best Director	Gandhi	Richard Attenborough
+670454410	"North Bergen, Nj"	9-May-40	White	1983	Best Director	Terms of Endearment	James L. Brooks
+670454411	"Cáslav, Czechoslovakia"	18-Feb-32	White	1985	Best Director	Amadeus	Milos Forman
+670454412	"Lafayette, In"	1-Jul-34	White	1986	Best Director	Out of Africa	Sydney Pollack
+670454413	New York City	15-Sep-46	White	1990	Best Director	Platoon	Oliver Stone
+670454414	"Parma, Emilia-Romagna, Italy"	16-Mar-41	White	1988	Best Director	The Last Emperor	Bernardo Bertolucci
+670454415	"Baltimore, Md"	6-Apr-42	White	1989	Best Director	Rain Man	Barry Levinson
+670454416	New York City	15-Sep-46	White	1990	Best Director	Born on the Fourth of July	Oliver Stone
+670454417	"Lynwood, Ca"	18-Jan-55	White	1991	Best Director	Dances with Wolves	Kevin Costner
+670454418	"Baldwin, Ny"	22-Feb-44	White	1992	Best Director	The Silence of the Lambs	Jonathan Demme
+670454419	"San Francisco, Ca"	31-May-30	White	1993	Best Director	Unforgiven	Clint Eastwood
+670454420	"Cincinnati, Oh"	18-Dec-46	White	1994	Best Director	Schindler's List	Steven Spielberg
+670454421	"Chicago, Il"	14-May-52	White	1995	Best Director	Forrest Gump	Robert Zemeckis
+670454422	"Peekskill, Ny"	3-Jan-56	White	1996	Best Director	Braveheart	Mel Gibson
+670454423	"Ryde, Isle of Wight, England"	6-Jan-54	White	1997	Best Director	The English Patient	Anthony Minghella
+670454424	"Kapuskasing, Ontario, Canada"	16-Aug-54	White	1998	Best Director	Titanic	James Cameron
+670454425	"Cincinnati, Oh"	18-Dec-46	White	1999	Best Director	Saving Private Ryan	Steven Spielberg
+670454426	"Reading, Berkshire, England"	1-Aug-65	White	2000	Best Director	American Beauty	Sam Mendes
+670454427	"Atlanta, Ga"	14-Jan-63	White	2001	Best Director	Traffic	Steven Soderbergh
+670454428	"Duncan, Ok"	1-Mar-54	White	2002	Best Director	A Beautiful Mind	Ron Howard
+670454429	"Paris, France"	18-Aug-33	White	2003	Best Director	The Pianist	Roman Polanski
+670454430	"Wellington, New Zealand"	31-Oct-61	White	2004	Best Director	The Lord of the Rings: Return of the King	Peter Jackson
+670454431	"San Francisco, Ca"	31-May-30	White	2005	Best Director	Million Dollar Baby	Clint Eastwood
+670454432	"Pingtung, Taiwan"	23-Oct-54	Asian	2006	Best Director	Brokeback Mountain	Ang Lee
+670454433	"Flushing, Ny"	17-Nov-42	White	2007	Best Director	The Departed	Martin Scorsese
+670454434	"St. Louis Park, Mn"	21-Sep-57	White	2008	Best Director	No Country for Old Men	Ethan Coen
+670454435	"Manchester, England"	20-Oct-56	White	2009	Best Director	Slumdog Millionaire	Danny Boyle
+670454436	"San Carlos, Ca"	27-Nov-51	White	2009	Best Director	The Hurt Locker	Kathryn Bigelow
+670454437	"London, England"	1972	White	2011	Best Director	The King's Speech	Tom Hooper
+670454438	"Paris, France"	29-Mar-67	White	2012	Best Director	The Artist	Michel Hazanavicius
+670454439	"Pingtung, Taiwan"	23-Oct-54	Asian	2013	Best Director	Life of Pi	Ang Lee
+670454440	"Rorschach, Switzerland"	23-Jul-1884	White	1929	Best Actor	The Last Command	Emil Jannings
+670454441	"Columbus, Oh"	29-Mar-1889	White	1930	Best Actor	In Old Arizona	Warner Baxter
+670454442	"London, England"	10-Apr-1868	White	1930	Best Actor	Desraeli	George Arliss
+670454443	"Philadelphia, Pa"	28-Apr-1878	White	1931	Best Actor	A Free Soul	Lionel Barrymore
+670454444	"Kansas City, Mo"	1-Apr-1885	White	1932	Best Actor	The Champ	Wallace Beery
+670454445	"Victoria Hotel, Scarborough, Yorkshire, England"	1-Jul-1899	White	1934	Best Actor	The Private Life of Henry VIII	Charles Laughton
+670454446	"Cadiz, Oh"	1-Feb-01	White	1935	Best Actor	It Happened One Night	Clark Gable
+670454447	"Tunbridge Wells, Kent, England"	11-Dec-1883	White	1936	Best Actor	The Informer	Victor McLaglen
+670454448	"Lviv, Ukraine"	22-Sep-1895	White	1937	Best Actor	The Story of Louis Pasteur	Paul Muni
+670454449	"Milwaukee, Wi"	5-Apr-00	White	1938	Best Actor	Captains Courageous	Spencer Tracy
+670454450	"Milwaukee, Wi"	5-Apr-00	White	1939	Best Actor	Boys Town	Spencer Tracy
+670454451	"Withington, Manchester, England"	18-Mar-05	White	1940	Best Actor	Goodbye Mr. Chips	Robert Donat
+670454452	"Indiana, Pa"	20-May-08	White	1941	Best Actor	The Philadelphia Story	Jimmy Stewart
+670454453	"Helena, Mt"	7-May-01	White	1942	Best Actor	Sergeant York	Gary Cooper
+670454454	"Manhattan, Ny"	17-Jul-1899	White	1943	Best Actor	Yankee Doodle Dandy	James Cagney
+670454455	"Budapest, Hungary"	26-May-1887	White	1944	Best Actor	Watch on the Rhine	Paul Lukas
+670454456	"Tacoma, Wa"	3-May-03	White	1945	Best Actor	Going My Way	Bing Crosby
+670454457	"Neath, Wales"	3-Jan-07	White	1946	Best Actor	The Lost Weekend	Ray Milland
+670454458	"Racine, Wi"	31-Aug-1897	White	1947	Best Actor	The Best Years of Our Lives	Fredric March
+670454459	"Richmond, Surrey, England"	9-Feb-1891	White	1948	Best Actor	A Double Life	Ronald Colman
+670454460	"Dorking, Surrey, England"	22-May-07	White	1949	Best Actor	Hamlet	Laurence Olivier
+670454461	"Philadelphia, Pa"	9-Dec-11	White	1950	Best Actor	All The King's Men	Broderick Crawford
+670454462	"Santurce, Puerto Rico"	8-Jan-09	Hispanic	1951	Best Actor	Cyrano de Bergerac	Jose Ferrer
+670454463	New York City	25-Dec-1899	White	1952	Best Actor	The Africa Queen	Humphrey Bogart
+670454464	"Helena, Mt"	7-May-01	White	1953	Best Actor	High Noon	Gary Cooper
+670454465	"O'fallon, Il"	17-Apr-18	White	1954	Best Actor	Stalag 17	William Holden
+670454466	"Omaha, Ne"	3-Apr-24	White	1955	Best Actor	On the Waterfront	Marlon Brando
+670454467	"Hamden, Ct"	24-Jan-17	White	1956	Best Actor	Marty	Ernest Borgnine
+670454468	"Vladivostok, Russia"	11-Jul-20	White	1957	Best Actor	The King and I	Yul Brynner
+670454469	"London, England"	2-Apr-14	White	1958	Best Actor	The Bridge on the River Kwai	Alec Guinness
+670454470	"London, England"	1-Mar-09	White	1959	Best Actor	Separate Tables	David Niven
+670454471	"Evanston, Il"	4-Oct-23	White	1960	Best Actor	Ben-hur	Charlton Heston
+670454472	New York City	2-Nov-13	White	1961	Best Actor	Elmer Gantry	Burt Lancaster
+670454473	"Vienna, Austria"	8-Dec-30	White	1962	Best Actor	Judgement at Nuremberg	Maximilian Schell
+670454474	"La Jolla, Ca"	5-Apr-16	White	1963	Best Actor	To Kill a Mockingbird	Gregory Peck
+670454475	"Miami, Fl"	20-Feb-27	Black	1964	Best Actor	Lilies of the Field	Sidney Poitier
+670454476	"Huyton, Lancashire, England"	5-Mar-08	White	1965	Best Actor	My Fair Lady	Rex Harrison
+670454477	New York City	19-Feb-24	White	1966	Best Actor	Cat Ballou	Lee Marvin
+670454478	"Hurstpierpoint, West Sussex, England"	21-Jan-22	White	1967	Best Actor	A Man For All Seasons	Paul Scofield
+670454479	"Westhampton, Ny"	14-Apr-25	White	1968	Best Actor	In the Heat of the Night	Rod Steiger
+670454480	"La Jolla, Ca"	9-Sep-23	White	1969	Best Actor	Charly	Cliff Robertson
+670454481	"Winterset, Ia"	26-May-07	White	1970	Best Actor	True Grit	John Wayne
+670454482	"Wise, Va"	18-Oct-27	White	1971	Best Actor	Patton	George C. Scott
+670454483	"San Bernardino, Ca"	30-Jan-30	White	1972	Best Actor	The French Connection	Gene Hackman
+670454484	"Omaha, Ne"	3-Apr-24	White	1973	Best Actor	The Godfather	Marlon Brando
+670454485	"Newton, Ma"	8-Feb-25	White	1974	Best Actor	Save the Tiger	Jack Lemmon
+670454486	"Mount Vernon, Ny"	4-Nov-18	White	1975	Best Actor	Harry and Tonto	Art Carney
+670454487	New York City	22-Apr-37	White	1976	Best Actor	One Flew Over the Cuckoo's Nest	Jack Nicholson
+670454488	"South Kensington, London, England"	28-Sep-16	White	1977	Best Actor	Network	Peter Finch
+670454489	"Brooklyn, Ny"	29-Oct-47	White	1978	Best Actor	The Goodbye Girl	Richard Dreyfuss
+670454490	"Yonkers, Ny"	29-Dec-38	White	1979	Best Actor	Coming Home	Jon Voight
+670454491	"Los Angeles, Ca"	8-Aug-37	White	1980	Best Actor	Kramer vs. Kramer	Dustin Hoffman
+670454492	New York City	17-Aug-43	White	1981	Best Actor	Raging Bull	Robert De Niro
+670454493	"Grand Island, Ne"	16-May-05	White	1982	Best Actor	On Golden Pond	Henry Fonda
+670454494	"Scarborough, Yorkshire, England"	31-Dec-43	Multiracial	1983	Best Actor	Gandhi	Ben Kingsley
+670454495	"San Diego, Ca"	5-Jan-31	White	1984	Best Actor	Tender Mercies	Robert Duvall
+670454496	"Pittsburgh, Pa"	24-Oct-39	Middle Eastern	1985	Best Actor	Amadeus	F. Murray Abraham
+670454497	"Washington, Dc"	20-Mar-50	White	1986	Best Actor	Kiss of the Spider Woman	William Hurt
+670454498	"Shaker Heights, Oh"	26-Jan-25	White	1987	Best Actor	The Color of Money	Paul Newman
+670454499	"New Brunswick, Nj"	25-Sep-44	White	1988	Best Actor	Wall Street	Michael Douglas
+670454500	"Los Angeles, Ca"	8-Aug-37	White	1989	Best Actor	Rainman	Dustin Hoffman
+670454501	"London, England"	29-Apr-57	White	1990	Best Actor	My Left Foot	Daniel Day-Lewis
+670454502	"Cowes, Isle of Wight, England"	19-Sep-48	White	1991	Best Actor	Reversal of Fortune	Jeremy Irons
+670454503	"Port Talbot, Wales"	31-Dec-37	White	1992	Best Actor	Silence of the Lambs	Anthony Hopkins
+670454504	"East Harlem, New York City"	25-Apr-40	White	1993	Best Actor	Scent of a Woman	Al Pacino
+670454505	"Concord, Ca"	9-Jul-56	White	1994	Best Actor	Philadelphia	Tom Hanks
+670454506	"Concord, Ca"	9-Jul-56	White	1995	Best Actor	Forrest Gump	Tom Hanks
+670454507	"Long Beach, Ca"	7-Jan-64	White	1996	Best Actor	Leaving Las Vegas	Nicolas Cage
+670454508	"Toowoomba, Queensland, Australia"	6-Jul-51	White	1997	Best Actor	Shine	Geoffrey Rush
+670454509	New York City	22-Apr-37	White	1997	Best Actor	As Good as It Gets	Jack Nicholson
+670454510	"Misericordia, Arezzo, Tuscany, Italy"	27-Oct-52	White	1999	Best Actor	Life is Beautiful	Roberto Benigni
+670454511	"South Orange, Nj"	26-Jul-59	White	2000	Best Actor	American Beauty	Kevin Spacey
+670454512	"Wellington, New Zealand"	7-Apr-64	White	2001	Best Actor	Gladiator	Russell Crowe
+670454513	"Mount Vernon, Ny"	28-Dec-54	Black	2002	Best Actor	Training Day	Denzel Washington
+670454514	New York City	14-Apr-73	White	2003	Best Actor	The Pianist	Adrien Brody
+670454515	"Burbank, Ca"	17-Aug-60	White	2003	Best Actor	Mystic River	Sean Penn
+670454516	"Terrell, Tx"	13-Dec-67	Black	2005	Best Actor	Ray	Jamie Foxx
+670454517	"Fairport, Ny"	23-Jul-67	White	2006	Best Actor	Capote	Philip Seymour Hoffman
+670454518	"Longview, Tx"	15-Jul-61	Black	2007	Best Actor	The Last King of Scotland	Forest Whitaker
+670454519	"London, England"	29-Apr-57	White	2008	Best Actor	There Will Be Blood	Daniel Day-Lewis
+670454520	"Burbank, Ca"	17-Aug-60	White	2009	Best Actor	Milk	Sean Penn
+670454521	"Los Angeles, Ca"	4-Dec-49	White	2010	Best Actor	Crazy Heart	Jeff Bridges
+670454522	"Grayshott, Hampshire, England"	10-Sep-60	White	2011	Best Actor	The King's Speech	Colin Firth
+670454523	"Rueil-Malmaison, Hauts-De-Seine, France"	19-Jun-72	White	2012	Best Actor	The Artist	Jean Dujardin
+670454524	"London, England"	29-Apr-57	White	2013	Best Actor	Lincoln	Daniel Day-Lewis
+670454525	"Uvalde, Tx"	4-Nov-69	White	2014	Best Actor	Dallas Buyers Club	Matthew McConaughey
+670454526	"Swampscott, Ma"	25-Jul-1894	White	1938	Best Supporting Actor	Come and Get It	Walter Brennan
+670454527	"Vienna, Austria"	22-Mar-1896	White	1938	Best Supporting Actor	The Life of Emile Zola	Joseph Schildkraut
+670454528	"Swampscott, Ma"	25-Jul-1894	White	1939	Best Supporting Actor	Kentucky	Walter Brennan
+670454529	"Elizabeth, Nj"	11-Jul-1892	White	1940	Best Supporting Actor	Stagecoach	Thomas Mitchell
+670454530	"Swampscott, Ma"	25-Jul-1894	White	1941	Best Supporting Actor	The Westerner	Walter Brennan
+670454531	"London, England"	27-Jul-1880	White	1942	Best Supporting Actor	How Green Was My Valley	Donald Crisp
+670454532	"Walters, Ok"	13-Dec-10	White	1943	Best Supporting Actor	Johnny Eager	Van Heflin
+670454533	"Savannah, Ga"	17-Jun-1877	White	1944	Best Supporting Actor	The More the Merrier	Charles Coburn
+670454534	"Dublin, Ireland"	10-Mar-1888	White	1945	Best Supporting Actor	Going My Way	Barry Fitzgerald
+670454535	New York City	2-Nov-01	White	1946	Best Supporting Actor	A Tree Grows in Brooklyn	James Dunn
+670454536	"North Sydney, Nova Scotia, Canada"	14-Jan-14	White	1947	Best Supporting Actor	The Best Years of Our Lives	Harold Russell
+670454537	"Vale of Glamorgan, Wales"	26-Sep-1875	White	1948	Best Supporting Actor	Miracle on 34th Street	Edmund Gwenn
+670454538	"Toronto, Ontario, Canada"	6-Apr-1884	White	1949	Best Supporting Actor	The Treasure of the Sierra Madre	Walter Huston
+670454539	"Lima, Oh"	7-Nov-03	White	1950	Best Supporting Actor	Twelve O'Clock High	Dean Jagger
+670454540	"St. Petersburg, Russia"	3-Jul-06	White	1951	Best Supporting Actor	All About Eve	George Sanders
+670454541	"Chicago, Il"	22-Mar-12	White	1952	Best Supporting Actor	A Streetcar Named Desire	Karl Malden
+670454542	"Chihuahua, Mexico"	21-Apr-15	Hispanic	1953	Best Supporting Actor	Viva Zapata!	Anthony Quinn
+670454543	"Hoboken, Nj"	12-Dec-15	White	1954	Best Supporting Actor	From Here to Eternity	Frank Sinatra
+670454544	New York City	10-Sep-15	White	1955	Best Supporting Actor	The Barefoot Contessa	Edmond O'Brien
+670454545	"Newton, Ma"	8-Feb-25	White	1956	Best Supporting Actor	Mister Roberts	Jack Lemmon
+670454546	"Chihuahua, Mexico"	21-Apr-15	Hispanic	1957	Best Supporting Actor	Lust for Life	Anthony Quinn
+670454547	New York City	5-Feb-19	White	1958	Best Supporting Actor	Sayonara	Red Buttons
+670454548	"Hunt City, Il"	14-Jun-09	White	1959	Best Supporting Actor	The Big Country	Burl Ives
+670454549	"Marian Glas, Anglesey, Wales"	30-May-12	White	1960	Best Supporting Actor	Ben-Hur	Hugh Griffith
+670454550	"London, England"	16-Apr-21	White	1961	Best Supporting Actor	Spartacus	Peter Ustinov
+670454551	"Norwood, Oh"	16-Sep-34	White	1962	Best Supporting Actor	West Side Story	George Chakiris
+670454552	"Hartford, Ct"	25-Mar-01	White	1963	Best Supporting Actor	Sweet Bird of Youth	"Ed Begley, Sr."
+670454553	"Macon, Ga"	5-Apr-01	White	1964	Best Supporting Actor	Hud	Melvyn Douglas
+670454554	"London, England"	16-Apr-21	White	1965	Best Supporting Actor	Topkapi	Peter Ustinov
+670454555	"Bronx, Ny"	4-Nov-19	White	1966	Best Supporting Actor	A Thousand Clowns	Martin Balsam
+670454556	New York City	1-Oct-20	White	1967	Best Supporting Actor	The Fortune Cookie	Walter Matthau
+670454557	New York City	18-Feb-25	White	1968	Best Supporting Actor	Cool Hand Luke	George Kennedy
+670454558	"Malden, Ma"	16-Jun-07	White	1969	Best Supporting Actor	The Subject Was Roses	Jack Albertson
+670454559	"St. Cloud, Mn"	4-Nov-13	White	1970	Best Supporting Actor	"They Shoot Horses, Don't They?"	Gig Young
+670454560	"Felixstowe, Suffolk, England"	22-Feb-08	White	1971	Best Supporting Actor	Ryan's Daughter	John Mills
+670454561	"Shidler, Ok"	13-Jun-18	White	1972	Best Supporting Actor	The Last Picture Show	Ben Johnson
+670454562	"Cleveland, Oh"	11-Apr-32	White	1973	Best Supporting Actor	Cabaret	Joel Grey
+670454563	"Bucharest, Romania"	22-Sep-02	White	1974	Best Supporting Actor	The Paper Chase	John Houseman
+670454564	New York City	17-Aug-43	White	1975	Best Supporting Actor	The Godfather Part II	Robert De Niro
+670454565	New York City	20-Jan-1896	White	1976	Best Supporting Actor	The Sunshine Boys	George Burns
+670454566	"Chicago, Il"	26-Jul-22	White	1977	Best Supporting Actor	All the President's Men	Jason Robards
+670454567	"Chicago, Il"	26-Jul-22	White	1978	Best Supporting Actor	Julia	Jason Robards
+670454568	"Astoria, Ny"	31-Mar-43	White	1979	Best Supporting Actor	The Deer Hunter	Christopher Walken
+670454569	"Macon, Ga"	5-Apr-01	White	1980	Best Supporting Actor	Being There	Melvyn Douglas
+670454570	"Malibu, Ca"	16-Aug-60	White	1981	Best Supporting Actor	Oridnary People	Timothy Hutton
+670454571	"London, England"	14-Apr-04	White	1982	Best Supporting Actor	Arthur	John Gielgud
+670454572	"Brooklyn, Ny"	27-May-36	Black	1983	Best Supporting Actor	An Officer and a Gentleman	"Lou Gossett, Jr."
+670454573	New York City	22-Apr-37	White	1984	Best Supporting Actor	Terms of Endearment	Jack Nicholson
+670454574	"Samrong Young, Cambodia"	22-Mar-40	Asian	1985	Best Supporting Actor	The Killing Fields	Haing S. Ngor
+670454575	"Kenosha, Wi"	31-May-04	White	1986	Best Supporting Actor	Cocoon	Don Ameche
+670454576	"Bermondsey, England"	14-Mar-33	White	1987	Best Supporting Actor	Hannah and Her Sisters	Michael Caine
+670454577	"Edinburgh, Scotland"	25-Aug-30	White	1988	Best Supporting Actor	The Untouchables	Sean Connery
+670454578	"St. Louis, Mo"	24-Oct-47	White	1989	Best Supporting Actor	A Fish Called Wanda	Kevin Kline
+670454579	"Mount Vernon, Ny"	28-Dec-54	Black	1990	Best Supporting Actor	Glory	Denzel Washington
+670454580	"Newark, Nj"	9-Feb-43	White	1991	Best Supporting Actor	Good Fellas	Joe Pesci
+670454581	"Lattimer Mines, Pa"	18-Feb-19	White	1992	Best Supporting Actor	City Slickers	Jack Palance
+670454582	"San Bernardino, Ca"	30-Jan-30	White	1993	Best Supporting Actor	Unforgiven	Gene Hackman
+670454583	"San Saba, Tx"	15-Sep-46	White	1994	Best Supporting Actor	The Fugitive	Tommy Lee Jones
+670454584	"Brooklyn, Ny"	20-Jun-31	White	1995	Best Supporting Actor	Ed Wood	Martin Landau
+670454585	"South Orange, Nj"	26-Jul-59	White	1996	Best Supporting Actor	The Usual Suspects	Kevin Spacey
+670454586	"Bronx, Ny"	2-Jan-68	Black	1997	Best Supporting Actor	Jerry Maguire	"Cuba Gooding, Jr."
+670454587	"Chicago, Il"	21-Jul-51	White	1998	Best Supporting Actor	Good Will Hunting	Robin Williams
+670454588	"Laurel, Ne"	31-Aug-28	White	1999	Best Supporting Actor	Affliction	James Coburn
+670454589	"Bermondsey, England"	14-Mar-33	White	2000	Best Supporting Actor	The Cider House Rules	Michael Caine
+670454590	"Santurce, Puerto Rico"	19-Feb-67	Hispanic	2001	Best Supporting Actor	Traffic	Benicio Del Toro
+670454591	"Lincoln, Lincolnshire, England"	24-May-49	White	2002	Best Supporting Actor	Iris	Jim Broadbent
+670454592	"Kansas City, Mo"	9-Jul-51	White	2003	Best Supporting Actor	Adaptation	Chris Cooper
+670454593	"West Covina, Ca"	16-Oct-58	White	2004	Best Supporting Actor	Mystic River	Tim Robbins
+670454594	"Memphis, Tn"	1-Jun-37	Black	2005	Best Supporting Actor	Million Dollar Baby	Morgan Freeman
+670454595	"Lexington, Ky"	6-May-61	White	2006	Best Supporting Actor	Syriana	George Clooney
+670454596	"Brooklyn, Ny"	26-Mar-34	White	2007	Best Supporting Actor	Little Miss Sunshine	Alan Arkin
+670454597	"Las Palmas De Gran Canaria, Canary Islands"	1-Mar-69	Hispanic	2008	Best Supporting Actor	No Country for Old Men	Javier Bardem
+670454598	"Perth, Australia"	4-Apr-79	White	2009	Best Supporting Actor	The Dark Knight	Heath Ledger
+670454599	Na	4-Oct-56	White	2010	Best Supporting Actor	Inglourious Basterds	Christoph Waltz
+670454600	"Haverfordwest, Pembrokeshire, Wales"	30-Jan-74	White	2011	Best Supporting Actor	The Fighter	Christian Bale
+670454601	"Toronto, Ontario, Canada"	13-Dec-29	White	2012	Best Supporting Actor	Beginning	Christopher Plummer
+670454602	Na	4-Oct-56	White	2013	Best Supporting Actor	Django Unchained	Christoph Waltz
+670454603	"Bossier City, La"	26-Dec-71	White	2014	Best Supporting Actor	Dallas Buyers Club	Jared Leto
+670454604	"Philadelphia, Pa"	6-Oct-06	White	1929	Best Actress	7th Heaven	Janet Gaynor
+670454605	"Toronto, Ontario, Canada"	8-Apr-1892	White	1930	Best Actress	Coquette	Mary Pickford
+670454606	"Montreal, Quebec, Canada"	10-Aug-02	White	1930	Best Actress	The Divorcee	Norma Shearer
+670454607	"Cobourg, Ontario, Canada"	2-Nov-1868	White	1931	Best Actress	Min and Bill	Marie Dressler
+670454608	"Washington, Dc"	10-Oct-00	White	1932	Best Actress	The Sin of Madelon Claudet	Helen Hayes
+670454609	"Hartford, Ct"	12-May-07	White	1934	Best Actress	Morning Glory	Katharine Hepburn
+670454610	"Paris, France"	13-Sep-03	White	1935	Best Actress	It Happened One Night	Claudette Colbert
+670454611	"Lowell, Ma"	5-Apr-08	White	1936	Best Actress	Dangerous	Bette Davis
+670454612	"Dusseldorf, Germany"	12-Jan-10	White	1937	Best Actress	The Great Ziegfeld	Luise Rainer
+670454613	"Dusseldorf, Germany"	12-Jan-10	White	1938	Best Actress	The Good Earth	Luise Rainer
+670454614	"Lowell, Ma"	5-Apr-08	White	1939	Best Actress	Jezebel	Bette Davis
+670454615	"Darjeeling, India"	5-Nov-13	White	1940	Best Actress	Gone with the Wind	Vivien Leigh
+670454616	"Independence, Mo"	16-Jul-11	White	1941	Best Actress	Kitty Foyle	Ginger Rogers
+670454617	"Tokyo, Japan"	22-Oct-17	White	1940	Best Actress	Suspicion	Joan Fontaine
+670454618	"London, England"	29-Sep-04	White	1942	Best Actress	Mrs. Miniver	Greer Garson
+670454619	"Tulsa, Ok"	2-Mar-19	White	1944	Best Actress	The Song of Bernadette	Jennifer Jones
+670454620	"Stockholm, Sweden"	29-Aug-15	White	1945	Best Actress	Gaslight	Ingrid Bergman
+670454621	"San Antonio, Tx"	23-Mar-05	White	1946	Best Actress	Mildred Pierce	Joan Crawford
+670454622	"Tokyo, Japan"	1-Jul-16	White	1947	Best Actress	To Each His Own	Olivia de Havilland
+670454623	"Salt Lake City, Ut"	6-Jan-13	White	1948	Best Actress	The Farmer's Daughter	Loretta Young
+670454624	"St. Joseph, Mo"	5-Jan-17	White	1949	Best Actress	Johnny Belinda	Jane Wyman
+670454625	"Tokyo, Japan"	1-Jul-16	White	1950	Best Actress	The Heiress	Olivia de Havilland
+670454626	New York City	21-Jun-21	White	1951	Best Actress	Born Yesterday	Judy Holliday
+670454627	"Darjeeling, India"	5-Nov-13	White	1952	Best Actress	A Streetcar Named Desire	Vivien Leigh
+670454628	New York City	30-Aug-1898	White	1953	Best Actress	"Come Back, Little Sheba"	Shirley Booth
+670454629	"Brussels, Belgium"	4-May-29	White	1954	Best Actress	Roman Holiday	Audrey Hepburn
+670454630	"Philadelphia, Pa"	12-Nov-29	White	1955	Best Actress	The Country Girl	Grace Kelly
+670454631	"Rome, Italy"	7-Mar-08	White	1956	Best Actress	The Rose Tattoo	Anna Magnani
+670454632	"Stockholm, Sweden"	29-Aug-15	White	1957	Best Actress	Anastasia	Ingrid Bergman
+670454633	"Thomasville, Ga"	27-Feb-30	White	1958	Best Actress	The Three Faces of Eve	Joanne Woodward
+670454634	"Brooklyn, Ny"	30-Jun-18	White	1959	Best Actress	I Want To Live!	Susan Hayward
+670454635	"Wiesbaden, Germany"	25-Mar-21	White	1960	Best Actress	Room at the Top	Simone Signoret
+670454636	"London, England"	27-Feb-32	White	1961	Best Actress	Butterfield 8	Elizabeth Taylor
+670454637	"Pozzuoli, Italy"	20-Sep-34	White	1962	Best Actress	Two Women	Sophia Loren
+670454638	"Bronx, Ny"	17-Sep-31	White	1963	Best Actress	The Miracle Worker	Anne Bancroft
+670454639	"Packard, Ky"	20-Jan-26	White	1964	Best Actress	Hud	Patricia Neal
+670454640	"Walton-on-Thames, Surrey, England"	1-Oct-35	White	1965	Best Actress	Mary Poppins	Julie Andrews
+670454641	"Chabua, Assam, India"	14-Apr-41	White	1966	Best Actress	Darling	Julie Christie
+670454642	"London, England"	27-Feb-32	White	1967	Best Actress	Who's Afraid of Virginia Woolf?	Elizabeth Taylor
+670454643	"Hartford, Ct"	12-May-07	White	1968	Best Actress	Guess Who's Coming to Dinner	Katharine Hepburn
+670454644	"Brooklyn, Ny"	24-Apr-42	White	1969	Best Actress	Funny Girl	Barbra Streisand
+670454645	"Hartford, Ct"	12-May-07	White	1969	Best Actress	The Lion in Winter	Katharine Hepburn
+670454646	"Ilford, Essex, England"	28-Dec-34	White	1970	Best Actress	The Prime of Miss Jean Brodie	Maggie Smith
+670454647	"Birkenhead, Cheshire, England"	9-May-36	White	1971	Best Actress	Women in Love	Glenda Jackson
+670454648	New York City	21-Dec-37	White	1972	Best Actress	Klute	Jane Fonda
+670454649	"Los Angeles, Ca"	12-Mar-46	White	1973	Best Actress	Cabaret	Liza Minnelli
+670454650	"Birkenhead, Cheshire, England"	9-May-36	White	1974	Best Actress	A Touch of Class	Glenda Jackson
+670454651	"Detroit, Mi"	7-Dec-32	White	1975	Best Actress	Alice Doesn't Live Here Anymore	Ellen Burstyn
+670454652	"Birmingham, Al"	22-Jul-34	White	1976	Best Actress	One Flew Over the Cuckoo's Nest	Louise Fletcher
+670454653	"Bascom, Fl"	14-Jan-41	White	1977	Best Actress	Network	Faye Dunaway
+670454654	"Los Angeles, Ca"	5-Jan-46	White	1978	Best Actress	Annie Hall	Diane Keaton
+670454655	New York City	21-Dec-37	White	1979	Best Actress	Coming Home	Jane Fonda
+670454656	"Pasadena, Ca"	6-Nov-46	White	1980	Best Actress	Norma Rae	Sally Field
+670454657	"Quitman, Tx"	25-Dec-49	White	1981	Best Actress	Coal Miner's Daughter	Sissy Spacek
+670454658	"Hartford, Ct"	12-May-07	White	1982	Best Actress	On Golden Pond	Katharine Hepburn
+670454659	"Summit, Nj"	22-Jun-49	White	1983	Best Actress	Sophie's Choice	Meryl Streep
+670454660	"Richmond, Va"	24-Apr-34	White	1984	Best Actress	Terms of Endearment	Shirley MacLaine
+670454661	"Pasadena, Ca"	6-Nov-46	White	1985	Best Actress	Places in the Heart	Sally Field
+670454662	"Kirksville, Mo"	22-Nov-24	White	1986	Best Actress	The Trip to Bountiful	Geraldine Page
+670454663	"Morton Grove, Il"	24-Aug-65	White	1987	Best Actress	Children of a Lesser God	Marlee Matlin
+670454664	"El Centro, Ca"	20-May-46	White	1988	Best Actress	Moonstruck	Cher
+670454665	"Los Angeles, Ca"	19-Nov-62	White	1989	Best Actress	The Accused	Jodie Foster
+670454666	"London, England"	7-Jun-09	White	1990	Best Actress	Driving Miss Daisy	Jessica Tandy
+670454667	"Memphis, Tn"	28-Jun-48	White	1991	Best Actress	Misery	Kathy Bates
+670454668	"Los Angeles, Ca"	19-Nov-62	White	1992	Best Actress	The Silence of the Lambs	Jodie Foster
+670454669	"London, England"	15-Apr-59	White	1993	Best Actress	Howards End	Emma Thompson
+670454670	"Conyers, Ga"	20-Mar-58	White	1994	Best Actress	The Piano	Holly Hunter
+670454671	"Cloquet, Mn"	20-Apr-49	White	1995	Best Actress	Blue Sky	Jessica Lange
+670454672	"Queens, Ny"	4-Oct-46	White	1996	Best Actress	Dead Man Walking	Susan Sarandon
+670454673	"Chicago, Il"	23-Jun-57	White	1997	Best Actress	Fargo	Frances McDormand
+670454674	"Culver City, Ca"	15-Jun-63	White	1998	Best Actress	As Good As It Gets	Helen Hunt
+670454675	"Los Angeles, Ca"	27-Sep-72	White	1999	Best Actress	Shakespeare in Love	Gwyneth Paltrow
+670454676	"Lincoln, Ne"	30-Jul-74	White	2000	Best Actress	Boys Don't Cry	Hilary Swank
+670454677	"Smyrna, Ga"	28-Oct-67	White	2001	Best Actress	Erin Brockovich	Julia Roberts
+670454678	"Cleveland, Oh"	14-Aug-66	Multiracial	2002	Best Actress	Monster's Ball	Halle Berry
+670454679	"Honolulu, Hi"	20-Jun-67	White	2003	Best Actress	The Hours	Nicole Kidman
+670454680	"Benoni, South Africa"	7-Aug-75	White	2004	Best Actress	Monster	Charlize Theron
+670454681	"Lincoln, Ne"	30-Jul-74	White	2005	Best Actress	Million Dollar Baby	Hilary Swank
+670454682	"New Orleans, La"	22-Mar-76	White	2006	Best Actress	Walk the Line	Reese Witherspoon
+670454683	"Chiswick, London, England"	26-Jul-45	White	2007	Best Actress	The Queen	Helen Mirren
+670454684	"Paris, France"	30-Sep-75	White	2008	Best Actress	The Passionate Life of Edith Piaf	Marion Cotillard
+670454685	"Reading, England"	5-Oct-75	White	2009	Best Actress	The Reader	Kate Winslet
+670454686	"Arlington, Va"	26-Jul-64	White	2010	Best Actress	The Blind Side	Sandra Bullock
+670454687	"Jerusalem, Israel"	9-Jun-81	White	2011	Best Actress	Black Swan	Natalie Portman
+670454688	"Summit, Nj"	22-Jun-49	White	2012	Best Actress	The Iron Lady	Meryl Streep
+670454689	"Louisville, Ky"	15-Aug-90	White	2013	Best Actress	Silver Linings Playbook	Jennifer Lawrence
+670454690	"Melbourne, Victoria, Australia"	14-May-69	White	2014	Best Actress	Blue Jasmine	Cate Blanchett
+670454691	"Litchfield, Mn"	15-Feb-1899	White	1937	Best Supporting Actress	Anthony Adverse	Gale Sondergaard
+670454692	New York City	2-Nov-1892	White	1938	Best Supporting Actress	In Old Chicago	Alice Brady
+670454693	"Los Angeles, Ca"	7-Dec-1891	White	1939	Best Supporting Actress	Jezebel	Fay Bainter
+670454694	"Wichita, Ks"	10-Jun-1893	Black	1940	Best Supporting Actress	Gone with the Wind	Hattie McDaniel
+670454695	"Palmyra, Mo"	15-Oct-1879	White	1941	Best Supporting Actress	The Grapes of Wrath	Jane Darwell
+670454696	"Quincy, Il"	3-May-06	White	1942	Best Supporting Actress	The Great Lie	Mary Astor
+670454697	New York City	27-Oct-18	White	1943	Best Supporting Actress	Mrs. Miniver	Teresa Wright
+670454698	"Athens, Greece"	17-Dec-00	White	1944	Best Supporting Actress	For Whom the Bell Tolls	Katina Paxinou
+670454699	"Philadelphia, Pa"	15-Aug-1879	White	1945	Best Supporting Actress	None but the Lonely Heart	Ethel Barrymore
+670454700	New York City	25-Jun-03	White	1946	Best Supporting Actress	National Velvet	Anne Revere
+670454701	"Michigan City, In"	7-May-23	White	1947	Best Supporting Actress	The Razor's Edge	Anne Baxter
+670454702	New York City	29-Apr-17	White	1948	Best Supporting Actress	Gentleman's Agreement	Celeste Holm
+670454703	New York City	8-Mar-10	White	1949	Best Supporting Actress	Key Largo	Claire Trevor
+670454704	"Joliet, Il"	17-Mar-16	White	1950	Best Supporting Actress	All the King's Men	Mercedes McCambridge
+670454705	"Newtonville, Ma"	3-Jan-1886	White	1951	Best Supporting Actress	Harvey	Josephine Hull
+670454706	"Detroit, Mi"	12-Nov-22	White	1952	Best Supporting Actress	A Streetcar Named Desire	Kim Hunter
+670454707	"Los Angeles, Ca"	28-Nov-23	White	1953	Best Supporting Actress	The Bad and the Beautiful	Gloria Grahame
+670454708	"Denison, Ia"	27-Jan-21	White	1954	Best Supporting Actress	From Here to Eternity	Donna Reed
+670454709	"Newark, Nj"	4-Jul-24	White	1955	Best Supporting Actress	On the Waterfront	Eva Marie Saint
+670454710	"Oakland, Ca"	30-Dec-14	White	1956	Best Supporting Actress	East of Eden	Jo Van Fleet
+670454711	"Chicago, Il"	30-Jan-25	White	1957	Best Supporting Actress	Written on the Wind	Dorothy Malone
+670454712	"Otaro, Hokkaido, Japan"	3-Apr-29	Asian	1958	Best Supporting Actress	Sayonara	Miyoshi Umeki
+670454713	"Bramhall, Cheshire, England"	15-Aug-12	White	1959	Best Supporting Actress	Separate Tables	Wendy Hiller
+670454714	"St. Louis, Mo"	18-Aug-20	White	1960	Best Supporting Actress	The Diary of Anne Frank	Shelley Winters
+670454715	"Charleroi, Pa"	31-Mar-34	White	1961	Best Supporting Actress	Elmer Gantry	Shirley Jones
+670454716	"Humacao, Puerto Rico"	11-Dec-31	Hispanic	1962	Best Supporting Actress	West Side Story	Rita Moreno
+670454717	"Elmhurst, Ny"	14-Dec-46	White	1963	Best Supporting Actress	The Miracle Worker	Patty Duke
+670454718	"London, England"	11-May-1892	White	1964	Best Supporting Actress	the V.I.P.s	Margaret Rutherford
+670454719	"St. Petersburg, Russia"	9-Oct-18	White	1965	Best Supporting Actress	Zorba the Greek	Lila Kedrova
+670454720	"St. Louis, Mo"	18-Aug-20	White	1966	Best Supporting Actress	A Patch of Blue	Shelley Winters
+670454721	"Hastings, Ne"	27-Apr-37	White	1967	Best Supporting Actress	Who's Afraid of Virginia Woolf?	Sandy Dennis
+670454722	"Marblehead, Ma"	20-Nov-27	White	1968	Best Supporting Actress	Bonnie and Clyde	Estelle Parsons
+670454723	"Quincy, Ma"	30-Oct-1896	White	1969	Best Supporting Actress	Rosemary's Baby	Ruth Gordon
+670454724	"Silver Spring, Md"	21-Nov-45	White	1970	Best Supporting Actress	Cactus Flower	Goldie Hawn
+670454725	"Washington, Dc"	10-Oct-00	White	1971	Best Supporting Actress	Airport	Helen Hayes
+670454726	"Des Moines, Ia"	30-Apr-26	White	1972	Best Supporting Actress	The Last Picture Show	Cloris Leachman
+670454727	"Columbus, Oh"	29-Mar-19	White	1973	Best Supporting Actress	Butterflies Are Free	Eileen Heckart
+670454728	"Los Angeles, Ca"	5-Nov-63	White	1974	Best Supporting Actress	Paper Moon	Tatum O'Neal
+670454729	"Stockholm, Sweden"	29-Aug-15	White	1975	Best Supporting Actress	Murder on the Orient Express	Ingrid Bergman
+670454730	New York City	31-Oct-27	White	1976	Best Supporting Actress	Shampoo	Lee Grant
+670454731	"Old Westbury, Ny"	2-Aug-14	White	1977	Best Supporting Actress	Network	Beatrice Straight
+670454732	"London, England"	30-Jan-37	White	1978	Best Supporting Actress	Julia	Vanessa Redgrave
+670454733	"Ilford, Essex, England"	28-Dec-34	White	1979	Best Supporting Actress	California Suite	Maggie Smith
+670454734	"Summit, Nj"	22-Jun-49	White	1980	Best Supporting Actress	Kramer vs. Kramer	Meryl Streep
+670454735	"Newport, Ar"	8-Feb-53	White	1981	Best Supporting Actress	Melvin and Howard	Mary Steenburgen
+670454736	"Troy, Ny"	21-Jun-25	White	1982	Best Supporting Actress	Reds	Maureen Stapleton
+670454737	"Cloquet, Mn"	20-Apr-49	White	1983	Best Supporting Actress	Tootsie	Jessica Lange
+670454738	"Morristown, Nj"	2-Apr-45	White	1984	Best Supporting Actress	The Year of Living Dangerously	Linda Hunt
+670454739	"Croydon, Surrey, England"	22-Dec-07	White	1985	Best Supporting Actress	A Passage to India	Peggy Ashcroft
+670454740	"Santa Monica, Ca"	8-Jul-51	White	1986	Best Supporting Actress	Prizzi's Honor	Anjelica Huston
+670454741	"Kansas City, Mo"	28-Mar-48	White	1987	Best Supporting Actress	Hannah and Her Sisters	Dianne Wiest
+670454742	"Lowell, Ma"	20-Jun-31	White	1988	Best Supporting Actress	Moonstruck	Olympia Dukakis
+670454743	"Wareham, Ma"	21-Jan-56	White	1989	Best Supporting Actress	The Accidental Tourist	Geena Davis
+670454744	"Dublin, Ireland"	17-Feb-45	White	1990	Best Supporting Actress	My Left Foot	Brenda Fricker
+670454745	New York City	13-Nov-55	Black	1991	Best Supporting Actress	Ghost	Whoopi Goldberg
+670454746	"Queens, Ny"	28-Feb-48	Hispanic	1992	Best Supporting Actress	The Fisher King	Mercedes Ruehl
+670454747	"Brooklyn, Ny"	4-Dec-64	White	1993	Best Supporting Actress	My Cousin Vinny	Marisa Tomei
+670454748	"Winnipeg, Manitoba, Canada"	24-Jul-82	White	1994	Best Supporting Actress	The Piano	Anna Paquin
+670454749	"Kansas City, Mo"	28-Mar-48	White	1995	Best Supporting Actress	Bullets Over Broadway	Dianne Wiest
+670454750	"Tenafly, Nj"	28-Sep-67	White	1996	Best Supporting Actress	Mighty Aphrodite	Mira Sorvino
+670454751	"Paris, France"	9-Mar-64	White	1997	Best Supporting Actress	The English Patient	Juliette Binoche
+670454752	"Athens, Ga"	8-Dec-53	White	1998	Best Supporting Actress	L.A. Confidential	Kim Basinger
+670454753	"York, North Yorkshire, England"	9-Dec-34	White	1999	Best Supporting Actress	Shakespeare in Love	Judi Dench
+670454754	"Los Angeles, Ca"	4-Jun-75	White	2000	Best Supporting Actress	"Girl, Interrupted"	Angelina Jolie
+670454755	"La Jolla, Ca"	14-Aug-59	White	2001	Best Supporting Actress	Pollock	Marcia Gay Harden
+670454756	"Catskill Mountains, Ny"	12-Dec-70	White	2002	Best Supporting Actress	A Beautiful Mind	Jennifer Connelly
+670454757	"Mumbles, Wales"	25-Sep-69	White	2003	Best Supporting Actress	Chicago	Catherine Zeta-Jones
+670454758	"Katy, Tx"	25-Apr-69	White	2004	Best Supporting Actress	Cold Mountain	Renée Zellweger
+670454759	"Melbourne, Victoria, Australia"	14-May-69	White	2005	Best Supporting Actress	The Aviator	Cate Blanchett
+670454760	"London, England"	7-Mar-71	White	2006	Best Supporting Actress	The Constant Gardener	Rachel Weisz
+670454761	"Chicago, Il"	12-Sep-81	Black	2007	Best Supporting Actress	Dreamgirls	Jennifer Hudson
+670454762	"London, England"	5-Nov-60	White	2007	Best Supporting Actress	Michael Clayton	Tilda Swinton
+670454763	"Madrid, Spain"	28-Apr-74	Hispanic	2009	Best Supporting Actress	Vicky Cristina Barcelona	Penelope Cruz
+670454764	"Woodlawn, Md"	11-Dec-67	Black	2010	Best Supporting Actress	Precious	Mo'Nique
+670454765	New York City	14-Sep-60	White	2011	Best Supporting Actress	The Fighter	Melissa Leo
+670454766	"Montgomery, Al"	25-May-72	Black	2012	Best Supporting Actress	The Help	Octavia Spencer
+670454767	"Brooklyn, Ny"	12-Nov-82	White	2013	Best Supporting Actress	Les Misérables	Anne Hathaway
+670454768	"Mexico City, Mexico"	1-Mar-83	Black	2014	Best Supporting Actress	12 Years a Slave	Lupita Nyong'o
+670927629	"Sucha, Galicia, Austria"	22-Jun-06	White	1961	Best Director	The Apartment	Billy Wilder
+670939613	"Independence, Mo"	16-Jul-11	White	1941	Best Actress	Kitty Foyle	Ginger Rogers
+670944094	"Concord, Ca"	9-Jul-56	White	1994	Best Actor	Philadelphia	Tom Hanks
+670944168	New York City	3-Feb-39	White	1979	Best Director	The Deer Hunter	Michael Cimino
+670944316	"Quincy, Il"	3-May-06	White	1942	Best Supporting Actress	The Great Lie	Mary Astor
+670944478	"Los Angeles, Ca"	4-Jun-75	White	2000	Best Supporting Actress	"Girl, Interrupted"	Angelina Jolie
+670944543	New York City	31-Oct-27	White	1976	Best Supporting Actress	Shampoo	Lee Grant
+670944623	New York City	25-Jun-03	White	1946	Best Supporting Actress	National Velvet	Anne Revere
+670944674	"Bascom, Fl"	14-Jan-41	White	1977	Best Actress	Network	Faye Dunaway
+670944755	"Walters, Ok"	13-Dec-10	White	1943	Best Supporting Actor	Johnny Eager	Van Heflin
+670944822	"Thomasville, Ga"	27-Feb-30	White	1958	Best Actress	The Three Faces of Eve	Joanne Woodward
+670944835	"Helena, Mt"	7-May-01	White	1953	Best Actor	High Noon	Gary Cooper
+670944920	"London, England"	27-Feb-32	White	1967	Best Actress	Who's Afraid of Virginia Woolf?	Elizabeth Taylor
+670944948	"Lincoln, Ne"	30-Jul-74	White	2005	Best Actress	Million Dollar Baby	Hilary Swank
+670945043	"Lincoln, Ne"	30-Jul-74	White	2005	Best Actress	Million Dollar Baby	Hilary Swank
+670945693	"Los Angeles, Ca"	27-Sep-72	White	1999	Best Actress	Shakespeare in Love	Gwyneth Paltrow
+670945790	"Malden, Ma"	16-Jun-07	White	1969	Best Supporting Actor	The Subject Was Roses	Jack Albertson
+670945834	"Woodlawn, Md"	11-Dec-67	Black	2010	Best Supporting Actress	Precious	Mo'Nique
+670945895	"La Jolla, Ca"	14-Aug-59	White	2001	Best Supporting Actress	Pollock	Marcia Gay Harden
+670946199	"Ilford, Essex, England"	28-Dec-34	White	1970	Best Actress	The Prime of Miss Jean Brodie	Maggie Smith
+670946276	"London, England"	7-Mar-71	White	2006	Best Supporting Actress	The Constant Gardener	Rachel Weisz
+670946299	"Manchester, England"	20-Oct-56	White	2009	Best Director	Slumdog Millionaire	Danny Boyle
+670964912	"Chicago, Il"	26-Jul-22	White	1977	Best Supporting Actor	All the President's Men	Jason Robards
+670964956	"Laurel, Ne"	31-Aug-28	White	1999	Best Supporting Actor	Affliction	James Coburn
+670972898	"Nevada, Mo"	5-Aug-06	White	1949	Best Director	The Treasure of the Sierra Madre	John Huston

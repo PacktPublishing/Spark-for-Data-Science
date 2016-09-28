@@ -1,0 +1,522 @@
+//Chapter 4 Data analysis on Spark - Scala example code
+
+//DATA ACQUISITION
+// From RDD: Create an RDD and convert to DataFrame
+scala> val employees = sc.parallelize(List((1, "John", 25), (2, "Ray", 35), (3, "Mike", 24), (4, "Jane", 28), (5, "Kevin", 26), (6, "Vincent", 35), (7, "James", 38), (8, "Shane", 32), (9, "Larry", 29), (10, "Kimberly", 29), (11, "Alex", 28), (12, "Garry", 25), (13, "Max", 31))).toDF("emp_id","name","age")
+employees: org.apache.spark.sql.DataFrame = [emp_id: int, name: string ... 1 more field]
+
+scala> 
+// From JSON: reading a JSON file
+scala> val salary = spark.read.json("./salary.json")
+salary: org.apache.spark.sql.DataFrame = [e_id: bigint, salary: bigint]
+
+scala> val designation = spark.read.json("./designation.json")
+designation: org.apache.spark.sql.DataFrame = [id: bigint, role: string]
+
+scala>
+
+//DATA CONSOLIDATION
+// creating the final data matrix using the join operation
+scala> val final_data = employees.join(salary, $"emp_id" === $"e_id").
+        join(designation, $"emp_id" === $"id").select(
+        "emp_id", "name", "age", "role", "salary")
+final_data: org.apache.spark.sql.DataFrame = [emp_id: int, name: string ... 3 more fields]
+
+scala>
+//DATA CLEANSING
+//Missing value treatment
+// Dropping rows with missing value(s)
+scala> var clean_data = final_data.na.drop() //Note the var declaration instead of val 
+clean_data: org.apache.spark.sql.DataFrame = [emp_id: int, name: string ... 3 more fields]
+
+scala> 
+// Replacing missing value by mean
+scal> val mean_salary = final_data.select(floor(avg("salary"))).
+            first()(0).toString.toDouble
+mean_salary: Double = 20843.0
+
+scal> clean_data = final_data.na.fill(Map("salary" -> mean_salary)) //Reassigning clean_data 
+clean_data: org.apache.spark.sql.DataFrame = [emp_id: int, name: string ... 3 more fields]
+
+scala> 
+
+//Another example for missing value treatment
+
+scala> case class Author (FirstName: String, LastName: String, Dob: String)
+defined class Author
+
+scala> val authors = Seq(
+        Author("Thomas","Hardy","June 2, 1840"),
+        Author("Charles","Dickens","7 February 1812"),
+        Author("Mark","Twain",null),
+        Author("Emily",null,null))
+authors: Seq[Author] = List(Author(Thomas,Hardy,June 2, 1840),
+   Author(Charles,Dickens,7 February 1812), Author(Mark,Twain,null),
+   Author(Emily,null,null))
+scala> val ds1 = sc.parallelize(authors).toDS()
+ds1: org.apache.spark.sql.Dataset[Author] = [FirstName: string, LastName: string ... 1 more field]
+
+scala> ds1.show()
++---------+--------+---------------+
+|FirstName|LastName|            Dob|
++---------+--------+---------------+
+|   Thomas|   Hardy|   June 2, 1840|
+|  Charles| Dickens|7 February 1812|
+|     Mark|   Twain|           null|
+|    Emily|    null|           null|
++---------+--------+---------------+
+scala>
+// Drop rows with missing values
+scala> ds1.na.drop().show()
++---------+--------+---------------+
+|FirstName|LastName|            Dob|
++---------+--------+---------------+
+|   Thomas|   Hardy|   June 2, 1840|
+|  Charles| Dickens|7 February 1812|
++---------+--------+---------------+
+
+scala>
+
+//Drop rows with at least 2 missing values
+//Note that there is no direct scala function to drop rows with at least n missing values
+//However, you can drop rows containing under specified non nulls
+//Use that function to achieve the same result
+scala> ds1.na.drop(minNonNulls = df1.columns.length - 1).show()
+
+//Fill all missing values with a given string
+scala> ds1.na.fill("Unknown").show()
++---------+--------+---------------+
+|FirstName|LastName|            Dob|
++---------+--------+---------------+
+|   Thomas|   Hardy|   June 2, 1840|
+|  Charles| Dickens|7 February 1812|
+|     Mark|   Twain|        Unknown|
+|    Emily| Unknown|        Unknown|
++---------+--------+---------------+
+
+scala>
+//Fill missing values in each column with a given string
+scala> ds1.na.fill(Map("LastName"->"--",
+                    "Dob"->"Unknown")).show()
++---------+--------+---------------+
+|FirstName|LastName|            Dob|
++---------+--------+---------------+
+|   Thomas|   Hardy|   June 2, 1840|
+|  Charles| Dickens|7 February 1812|
+|     Mark|   Twain|        Unknown|
+|    Emily|      --|        Unknown|
++---------+--------+---------------+
+ 
+// DATA PREPARATION
+
+
+
+//Outlier treatment
+// Identify outliers and replace them with mean
+//The following example reuses the clean_data dataset and mean_salary computed in previous examples
+
+//Compute deviation for each row 
+scala> val devs = clean_data.select(((clean_data("salary") - mean_salary) *
+        (clean_data("salary") - mean_salary)).alias("deviation"))
+devs: org.apache.spark.sql.DataFrame = [deviation: double]
+
+
+//Compute standard deviation
+scala> val stddev = devs.select(sqrt(avg("deviation"))).
+            first().getDouble(0)
+stddev: Double = 29160.932595617614
+//If you want to round the stddev value, use BigDecimal as shown
+scala> scala.math.BigDecimal(stddev).setScale(2,
+             BigDecimal.RoundingMode.HALF_UP)
+res14: scala.math.BigDecimal = 29160.93
+
+scala>
+//Replace outliers beyond 2 standard deviations with the mean salary
+scala> val outlierfunc = udf((value: Long, mean: Double) => {if (value > mean+(2*stddev)
+            || value < mean-(2*stddev)) mean else value})
+//Use the UDF to compute updated_salary
+//Note the usage of lit() to wrap a literal as a column
+scala> val no_outlier = clean_data.withColumn("updated_salary", 
+            outlierfunc(col("salary"),lit(mean_salary)))
+//Observe modified values
+scala> no_outlier.filter(no_outlier("salary") =!=   //Not !=
+             no_outlier("updated_salary")).show()
++------+----+---+-------+------+--------------+
+|emp_id|name|age|   role|salary|updated_salary|
++------+----+---+-------+------+--------------+
+|    13| Max| 31|Manager|120000|       20843.0|
++------+----+---+-------+------+--------------+
+
+scala> 
+
+//Duplicate values treatment
+
+// Reusing the Author case class
+
+// Deleting the duplicate rows
+scala> val authors = Seq(
+            Author("Thomas","Hardy","June 2,1840"),
+            Author("Thomas","Hardy","June 2,1840"),
+            Author("Thomas","H",null),
+            Author("Jane","Austen","16 December 1775"),
+            Author("Emily",null,null))
+
+authors: Seq[Author] = List(Author(Thomas,Hardy,June 2,1840), Author(Thomas,Hardy,June 2,1840), Author(Thomas,H,null), Author(Jane,Austen,16 December 1775), Author(Emily,null,null))
+
+
+scala> val ds1 = sc.parallelize(authors).toDS()
+ds1: org.apache.spark.sql.Dataset[Author] = [FirstName: string, LastName: string ... 1 more field]
+
+scala> ds1.show()
++---------+--------+----------------+
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|   Thomas|   Hardy|     June 2,1840|
+|   Thomas|   Hardy|     June 2,1840|
+|   Thomas|       H|            null|
+|     Jane|  Austen|16 December 1775|
+|    Emily|    null|            null|
++---------+--------+----------------+
+
+
+scala>
+// Drop duplicated rows
+scala> ds1.dropDuplicates().show()
++---------+--------+----------------+                                           
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|     Jane|  Austen|16 December 1775|
+|    Emily|    null|            null|
+|   Thomas|   Hardy|     June 2,1840|
+|   Thomas|       H|            null|
++---------+--------+----------------+
+
+
+scala> 
+// Drop duplicates based on a sub set of columns
+scala> ds1.dropDuplicates("FirstName").show()
++---------+--------+----------------+                                           
+|FirstName|LastName|             Dob|
++---------+--------+----------------+
+|    Emily|    null|            null|
+|     Jane|  Austen|16 December 1775|
+|   Thomas|   Hardy|     June 2,1840|
++---------+--------+----------------+
+
+
+//DATA TRANSFORMATIONS
+
+// Merging columns
+//Create a udf to concatenate two column values
+scala> val concatfunc = udf((name: String, age: Integer) => 
+                           {name + "_" + age})
+concatfunc: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function2>,StringType,Some(List(StringType, IntegerType)))
+
+scala>
+//Apply the udf to create merged column
+scala> val concat_df = final_data.withColumn("name_age",
+                         concatfunc($"name", $"age"))
+concat_df: org.apache.spark.sql.DataFrame =
+         [emp_id: int, name: string ... 4 more fields]
+
+scala> concat_df.show(4)
++------+----+---+---------+------+--------+
+|emp_id|name|age|     role|salary|name_age|
++------+----+---+---------+------+--------+
+|     1|John| 25|Associate| 10000| John_25|
+|     2| Ray| 35|  Manager| 12000|  Ray_35|
+|     3|Mike| 24|  Manager| 12000| Mike_24|
+|     4|Jane| 28|Associate|  null| Jane_28|
++------+----+---+---------+------+--------+
+only showing top 4 rows
+
+scala>
+// Adding constant to data
+scala> val addconst = udf((age: Integer) => {age + 10})
+addconst: org.apache.spark.sql.expressions.UserDefinedFunction =
+      UserDefinedFunction(<function1>,IntegerType,Some(List(IntegerType)))
+
+scala> val data_new = concat_df.withColumn("age_incremented",
+                 addconst(col("age")))
+data_new: org.apache.spark.sql.DataFrame =
+     [emp_id: int, name: string ... 5 more fields]
+
+scala> data_new.show(4)
++------+----+---+---------+------+--------+---------------+
+|emp_id|name|age|     role|salary|name_age|age_incremented|
++------+----+---+---------+------+--------+---------------+
+|     1|John| 25|Associate| 10000| John_25|             35|
+|     2| Ray| 35|  Manager| 12000|  Ray_35|             45|
+|     3|Mike| 24|  Manager| 12000| Mike_24|             34|
+|     4|Jane| 28|Associate|  null| Jane_28|             38|
++------+----+---+---------+------+--------+---------------+
+only showing top 4 rows
+
+// Replace values in a column
+//Note: As of Spark 2.0.0, there is no replace on DataFrame/ Dataset does not work so .na. is a work around
+
+scala> ds1.na.replace("FirstName",Map("Emily" -> "Charlotte")).show()
+
++---------+--------+---------------+
+|FirstName|LastName|            Dob|
++---------+--------+---------------+
+|   Thomas|   Hardy|   June 2, 1840|
+|  Charles| Dickens|7 February 1812|
+|     Mark|   Twain|           null|
+|Charlotte|    null|           null|
++---------+--------+---------------+
+
+scala>
+// If the column name argument is "*" in replace, then replacement is applicable to all columns
+
+//Append new columns based on existing values in a column
+//Give "LastName" instead of "Initial" if you want to overwrite
+
+scala> ds1.withColumn("Initial",ds1("LastName").substr(1,1)).show()
++---------+--------+---------------+-------+
+|FirstName|LastName|            Dob|Initial|
++---------+--------+---------------+-------+
+|   Thomas|   Hardy|   June 2, 1840|      H|
+|  Charles| Dickens|7 February 1812|      D|
+|     Mark|   Twain|           null|      T|
+|    Emily|    null|           null|   null|
++---------+--------+---------------+-------+
+
+scala>
+
+scala>
+//Date conversions
+//Create udf for date conversion that converts incoming string to YYYY-MM-DD format
+// The function assumes month is full month name and year is always 4 digits
+// Separator is always a space or comma
+// Month, date and year may come in any order
+
+//Reusing authors case class and data
+>>> val authors = Seq(
+        Author("Thomas","Hardy","June 2, 1840"),
+        Author("Charles","Dickens","7 February 1812"),
+        Author("Mark","Twain",null),
+        Author("Jane","Austen","16 December 1775"),
+        Author("Emily",null,null))
+authors: Seq[Author] = List(Author(Thomas,Hardy,June 2, 1840), Author(Charles,Dickens,7 February 1812), Author(Mark,Twain,null), Author(Jane,Austen,16 December 1775), Author(Emily,null,null))
+
+scala> val ds1 = sc.parallelize(authors).toDS()
+ds1: org.apache.spark.sql.Dataset[Author] = [FirstName: string, LastName: string ... 1 more field]
+
+scala>
+
+// Define udf
+//Note: You can type :paste on REPL to paste  multiline code. CTRL + D signals end of paste mode
+def toDateUDF = udf((s: String) => { 
+    var (year, month, day) = ("","","")
+    val mn = List("","January","February","March","April","May",
+        "June","July","August","September",
+        "October","November","December")
+    //Tokenize the date string and remove trailing comma, if any
+    if(s != null) {
+      for (x <- s.split(" ")) {
+        val token = x.stripSuffix(",")
+        token match {
+        case "" =>
+        case x if (mn.contains(token)) => 
+            month = "%02d".format(mn.indexOf(token))
+        case x if (token.length() == 4) =>
+            year = token 
+        case x =>
+            day = token
+        }
+     }   //End of token processing for
+     year + "-" + month + "-" + day
+   } else { 
+       null
+   }
+})
+toDateUDF: org.apache.spark.sql.expressions.UserDefinedFunction
+
+scala>
+//Apply udf and convert date strings to standard form YYYY-MM-DD
+scala> ds1.withColumn("Dob",toDateUDF(ds1("Dob"))).show()
++---------+--------+----------+
+|FirstName|LastName|       Dob|
++---------+--------+----------+
+|   Thomas|   Hardy| 1840-06-2|
+|  Charles| Dickens| 1812-02-7|
+|     Mark|   Twain|      null|
+|     Jane|  Austen|1775-12-16|
+|    Emily|    null|      null|
++---------+--------+----------+
+
+
+//Code related to Statistics section
+/* ”Sample” function is defined for DataFrames (not RDDs) which takes three parameters:
+withReplacement - Sample with replacement or not (input: True/False)
+fraction - Fraction of rows to generate (input: any number between 0 and 1 as per your requirement of sample size)
+seed - Seed for sampling (input: Any random seed)
+*/
+//Stratified sampling
+scala> val sample1 = data_new.sample(false, 0.6) //With random seed as no seed value specified
+sample1: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [emp_id: int, name: string ... 5 more fields]
+
+scala> val sample2 = data_new.sample(false, 0.6, 10000) //With specific seed value of 10000
+sample2: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [emp_id: int, name: string ... 5 more fields]
+
+//Note: We only looked at sampling on the DataFrames, there are MLlib library functions such as “sampleByKey” and “sampleByKeyExact” to do stratified sampling on RDDs of Key-Value pairs.Check out spark.util.random package for Bernoulli , Poisson or Random samplers
+
+//Measures of location
+//Reusing data_new created before 
+scala> val mean_age = data_new.select(floor(avg("age"))).first().getLong(0)
+mean_age: Long = 29
+
+scala> val age_counts = data_new.groupBy("age").agg(count($"age") as "freq")
+age_counts: org.apache.spark.sql.DataFrame = [age: int, freq: bigint]
+
+scala> age_counts.sort($"freq".desc).show(2)
++---+----+                                                                      
+|age|freq|
++---+----+
+| 35|   2|
+| 28|   2|
++---+----+
+
+scala> val mode_age = data_new.groupBy($"age").agg(count($"age")).
+                 sort($"count(age)".desc, $"age").first().getInt(0)
+mode_age: Int = 28                                                              
+
+
+//Measures of spread
+//Reusing data_new created before 
+scala> val range_salary = data_new.select(max("salary")).first().
+          getLong(0) - data_new.select(min("salary")).first().getLong(0)
+range_salary: Long = 119880
+
+scala> val mean_salary = data_new.select(floor(avg("salary"))).first().getLong(0)
+mean_salary: Long = 20843
+
+scala> val salary_deviations = data_new.select(((data_new("salary") - mean_salary)
+                     * (data_new("salary") - mean_salary)).alias("deviation"))
+salary_deviations: org.apache.spark.sql.DataFrame = [deviation: bigint]
+
+scala> val variance_salary = { salary_deviations.select(avg("deviation"))
+                                       .first().getDouble(0) }
+variance_salary: Double = 9.212233223333334E8
+
+scala> val stddev_salary = { salary_deviations
+                    .select(sqrt(avg("deviation")))
+                    .first().getDouble(0) }
+stddev_salary: Double = 30351.660948510435
+		
+//Summary statistics			
+scala> import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.linalg.Vectors
+
+scala> import org.apache.spark.mllib.stat.{
+          MultivariateStatisticalSummary, Statistics}
+import org.apache.spark.mllib.stat.{MultivariateStatisticalSummary, Statistics}
+
+// Create an RDD of number vectors
+//This example creates an RDD with 5 rows with 5 elements each
+scala> val observations = sc.parallelize(Seq.fill(5)(Vectors.dense(Array.fill(5)(
+                    scala.util.Random.nextDouble))))
+observations: org.apache.spark.rdd.RDD[org.apache.spark.mllib.linalg.Vector] = ParallelCollectionRDD[43] at parallelize at <console>:27
+
+scala> 
+// Compute column summary statistics.
+//Note that the results may vary because of random numbers
+scala> val summary = Statistics.colStats(observations)
+summary: org.apache.spark.mllib.stat.MultivariateStatisticalSummary = org.apache.spark.mllib.stat.MultivariateOnlineSummarizer@36836161
+
+scala> println(summary.mean)  // mean value for each column
+[0.5782406967737089,0.5903954680966121,0.4892908815930067,0.45680701799234835,0.6611492334819364]
+
+scala> println(summary.variance)    // column-wise variance
+[0.11893608153330748,0.07673977181967367,0.023169197889513014,0.08882605965192601,0.08360159585590332]
+
+scala> println(summary.numNonzeros) // number of nonzeros in each column
+[5.0,5.0,5.0,5.0,5.0]
+
+scala>
+//Graphical techniques
+//Histogram
+scala> val numRDD = sc.parallelize(Seq.fill(1000)(
+                    scala.util.Random.nextInt(10)))
+numRDD: org.apache.spark.rdd.RDD[Int] = 
+     ParallelCollectionRDD[0] at parallelize at <console>:24
+
+// Generate histogram data for given bucket count
+scala> numRDD.histogram(5)
+res10: (Array[Double], Array[Long]) = (Array(0.0, 1.8, 3.6, 5.4, 7.2, 9.0),Array(194, 209, 215, 195, 187))
+
+scala>
+//Alternatively, specify ranges
+scala> numRDD.histogram(Array(0,3.0,6,10))
+res13: Array[Long] = Array(293, 325, 382)
+
+//Inferential statistics
+scala> import org.apache.spark.mllib.linalg.{Vectors, Matrices}
+import org.apache.spark.mllib.linalg.{Vectors, Matrices}
+
+scala> import org.apache.spark.mllib.stat.Statistics
+
+scala> val vec = Vectors.dense( Array.fill(10)(
+               scala.util.Random.nextDouble))
+vec: org.apache.spark.mllib.linalg.Vector = [0.4925741159101148,....]
+
+scala> val GFT_Result = Statistics.chiSqTest(vec)
+GFT_Result: org.apache.spark.mllib.stat.test.ChiSqTestResult =
+Chi squared test summary:
+method: pearson
+degrees of freedom = 9
+statistic = 1.9350768763253192
+pValue = 0.9924531181394086
+No presumption against null hypothesis: observed follows the same distribution as expected..
+// Here the ‘goodness of fit test’ is conducted because your input is a vector
+scala> val mat = Matrices.dense(5,6, Array.fill(30)(
+                 scala.util.Random.nextDouble)) // a contingency matrix
+mat: org.apache.spark.mllib.linalg.Matrix =
+.....
+
+scala> val IT_Result = Statistics.chiSqTest(mat)
+IT_Result: org.apache.spark.mllib.stat.test.ChiSqTestResult =
+Chi squared test summary:
+method: pearson
+degrees of freedom = 20
+statistic = 2.5401190679900663
+pValue = 0.9999990459111089
+No presumption against null hypothesis: the occurrence of the outcomes is statistically independent..
+// Here the ‘independence test’ is conducted because your input is a vector
+
+//Correlations
+import org.apache.spark.mllib.stat.Statistics
+
+// Define two series
+//Number of partitions and cardinality of both Ser_1 and Ser_2 should be the same
+scala> val Ser_1 = sc.parallelize(Seq.fill(10)(
+                  scala.util.Random.nextDouble))
+Ser_1: org.apache.spark.rdd.RDD[Double] = ParallelCollectionRDD[3] at parallelize at <console>:27
+
+
+scala> val Ser_2 = sc.parallelize(Seq.fill(10)(
+                  scala.util.Random.nextDouble))
+Ser_2: org.apache.spark.rdd.RDD[Double] = ParallelCollectionRDD[4] at parallelize at <console>:27
+
+scala> val correlation = Statistics.corr(Ser_1, Ser_2, "pearson")
+correlation: Double = 0.43217145308272087
+
+//if you are interested in Spearman method, use “spearman” switch instead
+scala> val correlation = Statistics.corr(Ser_1, Ser_2, "spearman")
+correlation: Double = 0.4181818181818179
+
+scala>
+//Check on matrix
+//The following statement creates 100 rows of 5 element Vectors
+scala> val data = sc.parallelize(Seq.fill(100)(Vectors.dense(Array.fill(5)(
+              scala.util.Random.nextDouble))))
+data: org.apache.spark.rdd.RDD[org.apache.spark.mllib.linalg.Vector] = ParallelCollectionRDD[37] at parallelize at <console>:27
+
+scala> val correlMatrix = Statistics.corr(data, method="pearson") //method may be spearman as per you requirement
+correlMatrix: org.apache.spark.mllib.linalg.Matrix =
+1.0                    -0.05478051936343809  ... (5 total)
+-0.05478051936343809   1.0                   ...
+.......
+
+scala> 

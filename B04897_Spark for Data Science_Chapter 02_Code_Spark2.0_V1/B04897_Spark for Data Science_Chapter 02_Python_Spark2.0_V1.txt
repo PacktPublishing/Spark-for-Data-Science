@@ -1,0 +1,164 @@
+//Chapter -2 Spark Programming model - Python example code
+
+> bin/pyspark	// Start pyspark shell 
+>>> _         // For simplicity sake, no Log messages are shown here
+
+>>>type(sc)    //Check the type of Predefined SparkContext object
+<class 'pyspark.context.SparkContext'>
+
+//Create an RDD from local file system.
+>>>fileRDD = sc.textFile('RELEASE')
+
+>>>type(fileRDD)  //Check the type of fileRDD object 
+<class 'pyspark.rdd.RDD’>
+
+>>>fileRDD.first()   //action method. Evaluates RDD DAG and also returns the first item in the RDD
+u'Spark 2.0.0 built for Hadoop 2.7.2'
+
+
+// Pass a Python collection to create an RDD
+>>>numRDD = sc.parallelize([1,2,3,4],2)
+>>>type(numRDD)
+<class 'pyspark.rdd.RDD'>
+>>>numRDD
+ParallelCollectionRDD[3] at parallelize at PythonRDD.scala:475
+>>>numRDD.first()
+1
+>>>numRDD.map(lambda(x) : x*x).collect()
+[1,4,9,16]
+>>>numRDD.map(lambda(x) : x * x).reduce(lambda a,b: a+b)
+30
+
+//Transformations on normal RDDs
+//Filter
+a = sc.parallelize([1,2,3,4,5,6], 3)
+b = a.filter(lambda x: x % 3 == 0)
+b.collect()
+[3,6]
+
+//Distinct
+c = sc.parallelize(["John", "Jack", "Mike", "Jack"], 2)
+c.distinct().collect()
+
+['Mike', 'John', 'Jack']
+//Intersection
+x = sc.parallelize([1,2,3,4,5,6,7,8,9,10])
+y = sc.parallelize([5,6,7,8,9,10,11,12,13,14,15])
+z = x.intersection(y)
+z.collect()
+
+[8, 9, 10, 5, 6, 7]
+//Union
+a = sc.parallelize([3,4,5,6,7], 1)
+b = sc.parallelize([7,8,9], 1)
+c = a.union(b)
+c.collect()
+
+[3, 4, 5, 6, 7, 7, 8, 9]
+
+//map
+a = sc.parallelize(["animal", "human", "bird", "rat"], 3)
+b = a.map(lambda x: len(x))
+c = a.zip(b)
+c.collect()
+
+[('animal', 6), ('human', 5), ('bird', 4), ('rat', 3)]
+
+//flatMap
+a = sc.parallelize([1,2,3,4,5], 4)
+a.flatMap(lambda x: range(1,x+1)).collect()
+    // Range(1,3) returns 1,2 (excludes the higher boundary element)
+[1, 1, 2, 1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 4, 5]
+//One more example
+sc.parallelize([5, 10, 20], 2).flatMap(lambda x:[x, x, x]).collect()
+[5, 5, 5, 10, 10, 10, 20, 20, 20]
+
+//keys
+a = sc.parallelize(["black", "blue", "white", "green", "grey"], 2)
+b = a.map(lambda x:(len(x), x))
+c = b.keys()
+c.collect()
+
+[5, 4, 5, 5, 4]
+//cartesian
+x = sc.parallelize([1,2,3])
+y = sc.parallelize([10,11,12])
+x.cartesian(y).collect()
+[(1, 10), (1, 11), (1, 12), (2, 10), (2, 11), (2, 12), (3, 10), (3, 11), (3, 12)]
+
+//Transformations on PairedRDDs
+//groupByKey
+a = sc.parallelize(["black", "blue", "white", "green", "grey"], 2)
+b = a.groupBy(lambda x: len(x)).collect()
+sorted([(x,sorted(y)) for (x,y) in b])
+
+[(4, ['blue', 'grey']), (5, ['black', 'white', 'green'])]
+//join
+a = sc.parallelize(["blue", "green", "orange"], 3)
+b = a.keyBy(lambda x: len(x))
+c = sc.parallelize(["black", "white", "grey"], 3)
+d = c.keyBy(lambda x: len(x))
+b.join(d).collect()
+[(4, ('blue', 'grey')), (5, ('green', 'black')), (5, ('green', 'white'))]
+
+//leftOuterJoin
+b.leftOuterJoin(d).collect()
+[(6, ('orange', None)), (4, ('blue', 'grey')), (5, ('green', 'black')), (5, ('green', 'white'))]
+
+//rightOuterJoin
+b.rightOuterJoin(d).collect()
+[(4, ('blue', 'grey')), (5, ('green', 'black')), (5, ('green', 'white'))]
+
+//fullOuterJoin
+b.fullOuterJoin(d).collect()
+[(6, ('orange', None)), (4, ('blue', 'grey')), (5, ('green', 'black')), (5, ('green', 'white'))]
+
+//Reduce by key
+a = sc.parallelize(["black", "blue", "white", "green", "grey"], 2)
+b = a.map(lambda x: (len(x), x))
+b.reduceByKey(lambda x,y: x + y).collect()
+[(4, 'bluegrey'), (5, 'blackwhitegreen')]
+
+//reduceByKey 
+TODO:Example from doc:Answer: Verified. The one above is correct and the one immediately below this is correct
+a = sc.parallelize(["black", "blue", "white", "green", "grey"], 2)
+b = a.map(lambda x: (len(x), x))
+b.reduceByKey(lambda x,y: x + y).collect()
+[(4, 'bluegrey'), (5, 'blackwhitegreen')]
+
+a = sc.parallelize(["black", "blue", "white", "orange"], 2) //This one is the same as the above top one
+b = a.map(lambda x: (len(x), x))
+b.reduceByKey(lambda x,y: x + y).collect()
+[(4, 'blue'), (6, 'orange'), (5, 'blackwhite')]
+
+//aggregate
+z = sc.parallelize([1,2,7,4,30,6], 2)
+z.aggregate(0,(lambda x, y: max(x, y)),(lambda x, y: x + y))
+37
+z = sc.parallelize(["a","b","c","d"],2)
+z.aggregate("",(lambda x, y: x + y),(lambda x, y: x + y))
+'abcd'
+z.aggregate("s",(lambda x, y: x + y),(lambda x, y: x + y))
+'ssabsscds'
+z = sc.parallelize(["12","234","345","56789"],2)
+z.aggregate("",(lambda x, y: str(max(len(str(x)), len(str(y))))),(lambda x, y: str(y) + str(x)))
+53
+z.aggregate("",(lambda x, y: str(min(len(str(x)), len(str(y))))),(lambda x, y: str(y) + str(x)))
+11
+z = sc.parallelize(["12","234","345",""],2)
+z.aggregate("",(lambda x, y: str(min(len(str(x)), len(str(y))))),(lambda x, y: str(y) + str(x)))
+01
+
+//Actions examples
+>>>sc.parallelize([2, 3, 4]).count()
+3
+
+>>>sc.parallelize([2, 3, 4]).collect()
+[2, 3, 4]
+
+>>>sc.parallelize([2, 3, 4]).first()
+2
+
+>>>sc.parallelize([2, 3, 4]).take(2)
+[2, 3]
+

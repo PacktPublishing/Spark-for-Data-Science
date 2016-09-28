@@ -1,0 +1,284 @@
+//DATA ACQUISITION AND DATA CLEANSING
+--------------------------------------
+//Load tab delimited file
+>>> init_data = spark.read.csv("<YOURPATH>/Oscars.txt",sep="\t",header=True)
+//Look at data
+>>> init_data.show(4)
++---------+-----------------+-------------+--------------+-------------+-------------+--------------------+---------------+
+| _unit_id|       birthplace|date_of_birth|race_ethnicity|year_of_award|        award|               movie|         person|
++---------+-----------------+-------------+--------------+-------------+-------------+--------------------+---------------+
+|670454353|Chisinau, Moldova|  30-Sep-1895|         White|         1927|Best Director| Two Arabian Knights|Lewis Milestone|
+|670454354|Glasgow, Scotland|   2-Feb-1886|         White|         1930|Best Director|     The Divine Lady|    Frank Lloyd|
+|670454355|Chisinau, Moldova|  30-Sep-1895|         White|         1931|Best Director|All Quiet on the ...|Lewis Milestone|
+|670454356|      Chicago, Il|  23-Feb-1899|         White|         1932|Best Director|              Skippy|  Norman Taurog|
++---------+-----------------+-------------+--------------+-------------+-------------+--------------------+---------------+
+//Select columns of interest and ignore the rest
+>>> awards = init_data.select("birthplace", "date_of_birth",
+        "race_ethnicity","year_of_award","award").toDF(
+         "birthplace","date_of_birth","race","award_year","award")
+//register temporary view of this dataset
+>>> awards.createOrReplaceTempView("awards")
+scala>
+//Explore data
+>>> awards.select("award").distinct().show(10,False) //False => do not truncate
++-----------------------+                                                       
+|award                  |
++-----------------------+
+|Best Supporting Actress|
+|Best Director          |
+|Best Actress           |
+|Best Actor             |
+|Best Supporting Actor  |
++-----------------------+
+//Check DOB quality
+>>> spark.sql("SELECT distinct(length(date_of_birth)) FROM awards ").show()
++---------------------+                                                         
+|length(date_of_birth)|
++---------------------+
+|                   15|
+|                    9|
+|                    4|
+|                    8|
+|                   10|
+|                   11|
++---------------------+
+//Look at the value with unexpected length 4. Note that length varies based on month name
+>>> spark.sql("SELECT date_of_birth FROM awards WHERE length(date_of_birth) = 4").show()
++-------------+
+|date_of_birth|
++-------------+
+|         1972|
++-------------+
+//This is an invalid date. We can either drop this record or give some meaningful value like 01-01-1972
+
+//UDF to clean date
+//This function takes 2 digit year and makes it 4 digit
+// Any exception returns an empty string
+>>> def fncleanDate(s):
+      cleanedDate = ""
+      dateArray = s.split("-")
+      try:    //Adjust year
+         yr = int(dateArray[2])
+         if (yr < 100):
+              yr = yr + 1900 //make it 4 digit
+         cleanedDate = "{0}-{1}-{2}".format(int(dateArray[0]),
+                  dateArray[1],yr)
+      except :
+          None
+      return cleanedDate
+
+//UDF to clean birthplace
+// Data explorartion showed that 
+// A. Country is omitted for USA
+// B. New York City does not have State code as well
+//This function appends country as USA if
+// A. the string contains New York City  (OR)
+// B. if the last component is of length 2 (eg CA, MA)
+>>> def fncleanBirthplace(s):
+        cleanedBirthplace = ""
+        strArray = s.split(" ")
+        if (s == "New York City"):
+            strArray += ["USA"]  //Append USA
+        //Append country if last element length is 2
+        elif (len(strArray[len(strArray)-1]) == 2):
+            strArray += ["USA"]
+        cleanedBirthplace = " ".join(strArray)
+        return cleanedBirthplace
+
+//Register UDFs
+>>> from pyspark.sql.types import StringType
+>>> sqlContext.registerFunction("cleanDateUDF",fncleanDate, StringType())
+>>> sqlContext.registerFunction("cleanBirthplaceUDF",fncleanBirthplace, StringType())
+>>> 
+
+//Perform the following cleanup operations:
+// 1. Call udfs fncleanData and fncleanBirthplace to fix birthplace and country
+// 2. Subtract birth year from year_of_award to get age atthe time of receiving the award
+// 3. Retain race and award as they are 
+//Note 1: Use 3 double quotes for multiline string in scala
+//Note 2: Note that cleaned_df is declared as var, because we intend to reuse variable name
+//Note 3: substring_index returns part of first argument that starts with second argument.
+// -1 indicates first occurrence from right side
+
+>>> from pyspark.sql.functions import substring_index
+
+>>> cleaned_df = spark.sql (
+            """SELECT cleanDateUDF (date_of_birth) dob,
+               cleanBirthplaceUDF(birthplace) birthplace,
+               substring_index(cleanBirthplaceUDF(birthplace),' ',-1) country,
+               (award_year - substring_index(cleanDateUDF(date_of_birth),
+                         '-',-1)) age,
+               race, award FROM awards""")
+
+//Missing value treatment
+--------------------------
+// Drop rows with incomplete information
+>>> cleaned_df = cleaned_df.na.drop()
+
+
+//DATA EXPLORATION
+------------------
+>>> cleaned_df.groupBy("award","country").count().sort("country","award","count").show(4,False)
+ +---------------------+---------+-----+                                         
+|award                |country  |count|
++---------------------+---------+-----+
+|Best Actress         |Africa   |1    |
+|Best Actor           |Australia|1    |
+|Best Actress         |Australia|1    |
+|Best Supporting Actor|Australia|1    |
++---------------------+---------+-----+
+
+//Re-register data as table
+>>> cleaned_df.createOrReplaceTempView("awards")
+//Find out levels (distinct values) in each categorical variable
+>>> spark.sql("SELECT count(distinct country) country_count, count(distinct race) race_count, count(distinct award) award_count from awards").show()
++-------------+----------+-----------+                                          
+|country_count|race_count|award_count|
++-------------+----------+-----------+
+|           34|         6|          5|
++-------------+----------+-----------+
+
+//DATA PREPARATION
+-------------------
+
+//Distinct levels in race and award are not many. 
+//Country has too many values. Retain top ones and bundle the rest
+//Check out top 6 countries with most awards.
+>>> top_countries_df = spark.sql("SELECT country, count(*) freq FROM awards GROUP BY country ORDER BY freq DESC LIMIT 6")
+>>> top_countries_df.show()
++-------+----+                                                                  
+|country|freq|
++-------+----+
+|    USA| 289|
+|England|  57|
+| France|   9|
+| Canada|   8|
+|  Italy|   7|
+|Austria|   7|
++-------+----+
+>>> top_countries = [x[0] for x in top_countries_df.select("country").collect()]
+
+//UDF to fix country. Retain top 6 and bundle the rest into "Others"
+>>> from pyspark.sql.functions import udf
+>>> from pyspark.sql.types import StringType
+
+>>> setCountry = udf(lambda s: s if s in top_countries else "Others", StringType())
+//Apply UDF
+>>> cleaned_df = cleaned_df.withColumn("country", setCountry(cleaned_df["country"]))
+
+//Define pipeline to convert categorical labels to numcerical labels
+>>> from pyspark.ml.feature import StringIndexer, Bucketizer, VectorAssembler
+>>> from pyspark.ml import Pipeline
+ 
+//Race
+>>> raceIdxer = StringIndexer(inputCol= "race", outputCol="raceIdx")
+//Award (prediction target)
+>>> awardIdxer = StringIndexer(inputCol = "award", outputCol="awardIdx") 
+//Country
+>>> countryIdxer = StringIndexer(inputCol = "country", outputCol = "countryIdx")
+
+//Convert continuous variable age to buckets
+>>> splits = [-float("inf"), 35.0, 45.0, 55.0, 
+               float("inf")]
+>>> bucketizer = Bucketizer(splits = splits, inputCol = "age",
+                    outputCol = "age_buckets")
+>>>
+//Prepare numerical feature vector by clubbing all individual features
+>>> assembler = VectorAssembler(inputCols = ["raceIdx", 
+          "age_buckets","countryIdx"], outputCol = "features")
+
+//Define data preparation pipeline
+>>> dp_pipeline = Pipeline(stages = [raceIdxer,
+         awardIdxer, countryIdxer, bucketizer, assembler])
+
+//Transform dataset
+>>> cleaned_df = dp_pipeline.fit(cleaned_df).transform(cleaned_df)
+>>> cleaned_df.columns
+['dob', 'birthplace', 'country', 'age', 'race', 'award', 'raceIdx', 'awardIdx', 'countryIdx', 'age_buckets', 'features']
+
+//Split data into train and test datasets
+>>> trainData, testData = cleaned_df.randomSplit([0.7, 0.3])
+
+//BUILD MODEL
+//We'll be building multiple models using the same train and test datasets
+>>> from pyspark.ml import Pipeline
+>>> from pyspark.ml.classification import DecisionTreeClassifier
+ 
+//Use Decision tree classifier
+>>> dtreeModel = DecisionTreeClassifier(labelCol = "awardIdx", featuresCol="features").fit(trainData)
+
+//Run predictions using testData
+>>> dtree_predictions = dtreeModel.transform(testData)
+
+//Examine results. Your results may vary due to randomSplit
+>>> dtree_predictions.select("award","awardIdx","prediction").show(4)
++--------------------+--------+----------+
+|               award|awardIdx|prediction|
++--------------------+--------+----------+
+|       Best Director|     1.0|       4.0|
+|       Best Director|     1.0|       1.0|
+|       Best Director|     1.0|       1.0|
+|Best Supporting A...|     4.0|       3.0|
++--------------------+--------+----------+
+
+>>> dtree_predictions.filter(dtree_predictions["awardIdx"] != dtree_predictions["prediction"]).count()
+92
+>>> testData.count()
+137
+>>>
+//Predictions match with DecisionTreeClassifier model is about 31% ((133-92)*100/133)
+
+//Train Random forest
+>>> from pyspark.ml.classification import RandomForestClassifier, RandomForestClassificationModel
+>>> from pyspark.ml.feature import StringIndexer, IndexToString, VectorIndexer
+
+//Build model
+>>> RFmodel = RandomForestClassifier(labelCol = "awardIdx", featuresCol = "features", numTrees=6).fit(trainData)
+
+//Run predictions on the same test data using Random Forest model
+>>> RF_predictions = RFmodel.transform(testData)
+//Check results
+>>> RF_predictions.filter(RF_predictions["awardIdx"] != RF_predictions["prediction"]).count()
+94     //Roughly the same as DecisionTreeClassifier
+
+//Try OneVsRest Logistic regression technique
+>>> from pyspark.ml.classification import LogisticRegression, OneVsRest
+ 
+//This model requires a base classifier
+>>> classifier = LogisticRegression(labelCol = "awardIdx", featuresCol="features",
+              maxIter = 30, tol=1E-6, fitIntercept = True)
+//Fit OneVsRest model
+>>> ovrModel = OneVsRest(classifier = classifier, labelCol = "awardIdx",
+                featuresCol = "features").fit(trainData)
+//Run predictions
+>>> OVR_predictions = ovrModel.transform(testData)
+//Check results
+>>> OVR_predictions.filter(OVR_predictions["awardIdx"] != OVR_predictions["prediction"]).count()
+90  //Roughly the same as other models
+
+//MODEL EVALUATION
+//Evaluate metrics on each of the predictions
+>>> from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+
+//F1
+>>> f1_eval = MulticlassClassificationEvaluator(labelCol="awardIdx") //Default metric is F1
+//WeightedPrecision
+>>> wp_eval = MulticlassClassificationEvaluator(labelCol="awardIdx", metricName="weightedPrecision")
+//WeightedRecall
+>>> wr_eval = MulticlassClassificationEvaluator(labelCol="awardIdx", metricName="weightedRecall")
+//Accuracy
+>>> acc_eval = MulticlassClassificationEvaluator(labelCol="awardIdx", metricName="Accuracy")
+//Compute measures for all models
+>>> f1_eval_list = [ f1_eval.evaluate(x) for x in [dtree_predictions, RF_predictions, OVR_predictions]]
+>>> wp_eval_list = [ wp_eval.evaluate(x) for x in [dtree_predictions, RF_predictions, OVR_predictions]]
+>>> wr_eval_list = [ wr_eval.evaluate(x) for x in [dtree_predictions, RF_predictions, OVR_predictions]]
+//Print results for DecisionTree, Random Forest and OneVsRest
+>>> f1_eval_list
+[0.2957949866055487, 0.2645186821042419, 0.2564967990214734]
+>>> wp_eval_list
+[0.3265407181548341, 0.31914852065228005, 0.25295826631254753]
+>>> wr_eval_list
+[0.3082706766917293, 0.2932330827067669, 0.3233082706766917]
+>>> 
+ 
+

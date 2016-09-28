@@ -1,0 +1,81 @@
+// Chapter 4 Unified Data Access - Python example code
+//Example 1 to 4: Note that there are no Datasets in Python
+
+//Example 5: Window example with moving average computation
+
+>>> from pyspark.sql import Window
+>>> import pyspark.sql.functions as func
+//Create a DataFrame containing monthly sales data for two products
+>> file_path = "../work/MonthlySales.csv"
+>>> monthlySales = spark.read.csv(file_path,header=True, inferSchema=True)
+
+//Prepare WindowSpec to create a 3 month sliding window for a product
+//Negative subscript denotes rows above current row
+>>> w = Window.partitionBy(monthlySales["Product"]).orderBy(monthlySales["Month"]).rangeBetween(-2,0)
+>>> w
+<pyspark.sql.window.WindowSpec object at 0x7fdc33774a50>
+>>>
+//Define compute on the sliding window, a moving average in this case 
+>>> f = func.avg(monthlySales["Sales"]).over(w)
+>>> f
+Column<avg(Sales) OVER (PARTITION BY Product ORDER BY Month ASC RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)>
+>>>
+
+//Apply the sliding window and compute. Examine the results
+>>> monthlySales.select(monthlySales.Product,monthlySales.Sales,monthlySales.Month,
+                      func.bround(f,2).alias("MovingAvg")).orderBy(
+                      monthlySales.Product,monthlySales.Month).show(6)
++-------+-----+-----+---------+                                                 
+|Product|Sales|Month|MovingAvg|
++-------+-----+-----+---------+
+|     P1|   66|    1|     66.0|
+|     P1|   24|    2|     45.0|
+|     P1|   54|    3|     48.0|
+|     P1|    0|    4|     26.0|
+|     P1|   56|    5|    36.67|
+|     P1|   34|    6|     30.0|
++-------+-----+-----+---------+
+
+//Example 6: Streaming example
+//Understand nc
+// Netcat or nc is a networking utility that can be used for creating TCP/UDP connections 
+// -k Forces nc to stay listening for another connection after its current connection is completed.
+// -l Used to specify that nc should listen for an incoming connection
+//             rather than initiate a connection to a remote host. 
+
+//Run system activity report to collect memory usage in one terminal window
+// The following command shows memory utilization for every 2 seconds, 20 times
+
+// It diverts the output to the given port and you can check raw output from the browser
+//sar -r 2 20 | nc -lk 9999
+
+//In another window, open pyspark shell and do the following
+>>> import pyspark.sql.functions as func
+//Read stream
+>>> myStream = spark.readStream.format("socket"). \
+                       option("host","localhost"). \
+                       option("port",9999).load()
+myStream: org.apache.spark.sql.DataFrame = [value: string]
+ 
+//Filter out unwanted lines and then extract free memory part as a float
+//Drop missing values, if any
+>>> myDF = myStream.filter("value rlike 'IST'"). \
+           select(func.substring("value",15,9).cast("float"). \
+           alias("memFree")).na.drop().select("memFree")
+
+//Define an aggregate function
+>>> avgMemFree = myDF.select(func.avg("memFree"))
+
+//Create StreamingQuery handle that writes on to the console
+>>> query = avgMemFree.writeStream. \
+          outputMode("complete"). \
+          format("console"). \
+          start()
+Batch: 0
+-------------------------------------------
++------------+
+|avg(memFree)|
++------------+
+|   4042749.2|
++------------+
+.....

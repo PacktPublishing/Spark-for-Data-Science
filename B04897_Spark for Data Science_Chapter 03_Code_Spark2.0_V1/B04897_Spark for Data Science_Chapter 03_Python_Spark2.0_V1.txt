@@ -1,0 +1,218 @@
+//Create a list of colours
+>>> colors = ['white','green','yellow','red','brown','pink']
+//Distribute a local collection to form an RDD
+//Apply map function on that RDD to get another RDD containing colour, length tuples
+>>> color_df = sc.parallelize(colors).map(
+      lambda x:(x,len(x))).toDF(['color','length'])
+
+>>> color_df
+DataFrame[color: string, length: bigint]
+
+>>> color_df.dtypes        //Note the implicit type inference
+[('color', 'string'), ('length', 'bigint')]
+
+>>> color_df.show()  //Final output as expected. Order need not be the same as shown
++------+------+
+| color|length|
++------+------+
+| white|     5|
+| green|     5|
+|yellow|     6|
+|   red|     3|
+| brown|     5|
+|  pink|     4|
++------+------+
+//Pass the source json data file path
+>>> df = sqlContext.read.json('./authors.json')
+>>> df.show() //json parsed; Column names and data types inferred implicitly
++----------+---------+
+|first_name|last_name|
++----------+---------+
+|      Mark|    Twain|
+|   Charles|  Dickens|
+|    Thomas|    Hardy|
++----------+---------+
+//Launch shell with driver-class-path as a command line argument
+pyspark --driver-class-path /usr/share/java/mysql-connector-java.jar
+   //Pass the connection parameters
+>>> peopleDF = sqlContext.read.format('jdbc').options(
+                        url = 'jdbc:mysql://localhost',
+                        dbtable = 'test.people',
+                        user = 'root',
+                        password = 'mysql').load()
+   //Retrieve table data as a DataFrame
+>>> peopleDF.show()
++----------+---------+------+----------+----------+---------+
+|first_name|last_name|gender|       dob|occupation|person_id|
++----------+---------+------+----------+----------+---------+
+|    Thomas|    Hardy|     M|1840-06-02|    Writer|      101|
+|     Emily|   Bronte|     F|1818-07-30|    Writer|      102|
+| Charlotte|   Bronte|     F|1816-04-21|    Writer|      103|
+|   Charles|  Dickens|     M|1812-02-07|    Writer|      104|
++----------+---------+------+----------+----------+---------+
+Python:
+//Write DataFrame contents into Parquet format
+>>> peopleDF.write.parquet('writers.parquet')
+//Read Parquet data into another DataFrame
+>>> writersDF = sqlContext.read.parquet('writers.parquet') 
+>>> writersDF
+DataFrame[first_name: string, last_name: string, gender: string, dob: date, occupation: string, person_id: int]
+
+//DataFrame operations
+//Create a local collection of colors first
+>>> colors = ['white','green','yellow','red','brown','pink']
+//Distribute the local collection to form an RDD
+//Apply map function on that RDD to get another RDD containing colour, length tuples and convert that RDD to a DataFrame
+>>> color_df = sc.parallelize(colors).map(
+       lambda x:(x,len(x))).toDF(['color','length'])
+//Check the object type
+>>> color_df
+DataFrame[color: string, length: bigint]
+//Check the schema
+>>> color_df.dtypes
+[('color', 'string'), ('length', 'bigint')]
+
+//Check row count
+>>> color_df.count()
+6
+//Look at the table contents. You can limit displayed rows by passing parameter to show
+>>> color_df.show()
++------+------+
+| color|length|
++------+------+
+| white|     5|
+| green|     5|
+|yellow|     6|
+|   red|     3|
+| brown|     5|
+|  pink|     4|
++------+------+
+
+//List out column names
+>>> color_df.columns
+[u'color', u'length']
+
+//Drop a column. The source DataFrame color_df remains the same. //Spark returns a new DataFrame which is being passed to show
+>>> color_df.drop('length').show()
++------+
+| color|
++------+
+| white|
+| green|
+|yellow|
+|   red|
+| brown|
+|  pink|
++------+
+//Convert to JSON format
+>>> color_df.toJSON().first()
+u'{"color":"white","length":5}'
+//filter operation is similar to WHERE clause in SQL
+//You specify conditions to select only desired columns and rows
+//Output of filter operation is another DataFrame object that is usually passed on to some more operations
+//The following example selects the colors having a length of four or five only and label the column as “mid_length”
+filter
+------
+>>> color_df.filter(color_df.length.between(4,5)).select(
+             color_df.color.alias('mid_length')).show()
++----------+
+|mid_length|
++----------+
+|     white|
+|     green|
+|     brown|
+|      pink|
++----------+
+
+//This example uses multiple filter criteria
+>>> color_df.filter(color_df.length > 4).filter(
+        color_df[0]!='white').show()
++------+------+
+| color|length|
++------+------+
+| green|     5|
+|yellow|     6|
+| brown|     5|
++------+------+
+
+//Sort the data on one or more columns
+sort
+----
+//A simple single column sorting in default (ascending) order
+>>> color_df.sort('color').show()
++------+------+
+| color|length|
++------+------+
+| brown|     5|
+| green|     5|
+|  pink|     4|
+|   red|     3|
+| white|     5|
+|yellow|     6|
++------+------+
+//First filter colors of length more than 4 and then sort on multiple columns
+//The Filtered rows are sorted first on the column length in default ascending order. Rows with same length are sorted on color in descending order  
+>>> color_df.filter(color_df['length']>=4).sort("length", 'color',ascending=False).show()
++------+------+
+| color|length|
++------+------+
+|yellow|     6|
+| white|     5|
+| green|     5|
+| brown|     5|
+|  pink|     4|
++------+------+
+
+//You can use orderBy instead, which is an alias to sort
+>>> color_df.orderBy('length','color').take(4)
+[Row(color=u'red', length=3), Row(color=u'pink', length=4), Row(color=u'brown', length=5), Row(color=u'green', length=5)]
+
+//Alternative syntax, for single or multiple columns. 
+>>> color_df.sort(color_df.length.desc(), color_df.color.asc()).show()
++------+------+
+| color|length|
++------+------+
+|yellow|     6|
+| brown|     5|
+| green|     5|
+| white|     5|
+|  pink|     4|
+|   red|     3|
++------+------+
+//All the examples until now have been acting on one row at a time, filtering or transforming or reordering. 
+//The following example deals with regrouping the data
+//These operations require “wide dependency” and often involve shuffling. 
+groupBy
+-------
+>>> color_df.groupBy('length').count().show()
++------+-----+
+|length|count|
++------+-----+
+|     3|    1|
+|     4|    1|
+|     5|    3|
+|     6|    1|
++------+-----+
+//Data often contains missing information or null values. We may want to drop such rows or replace with some filler information. dropna is provided for dropping such rows
+//The following json file has names of famous authors. Firstname data is missing in one row.
+dropna
+------
+>>> df1 = sqlContext.read.json('./authors_missing.json')
+>>> df1.show()
++----------+---------+
+|first_name|last_name|
++----------+---------+
+|      Mark|    Twain|
+|   Charles|  Dickens|
+|      null|    Hardy|
++----------+---------+
+
+//Let us drop the row with incomplete information
+>>> df2 = df1.dropna()
+>>> df2.show()  //Unwanted row is dropped
++----------+---------+
+|first_name|last_name|
++----------+---------+
+|      Mark|    Twain|
+|   Charles|  Dickens|
++----------+---------+

@@ -1,0 +1,557 @@
+//Chapter 6 Machine Learning - Scala example code
+
+//VECTORS
+//Create vectors
+scala> import org.apache.spark.ml.linalg.{Vector, Vectors}
+import org.apache.spark.ml.linalg.{Vector, Vectors}
+//Create dense vector
+scala> val dense_v: Vector = Vectors.dense(10.0,0.0,20.0,30.0,0.0)
+dense_v: org.apache.spark.ml.linalg.Vector = [10.0,0.0,20.0,30.0,0.0]
+scala>
+//Create sparse vector: pass size, position index array and value array
+scala> val sparse_v1: Vector = Vectors.sparse(5,Array(0,2,3),
+       Array(10.0,20.0,30.0))
+sparse_v1: org.apache.spark.ml.linalg.Vector = (5,[0,2,3],[10.0,20.0,30.0])
+scala>
+//Another way to create sparse vector with position, value tuples
+scala> val sparse_v2: Vector = Vectors.sparse(5,
+        Seq((0,10.0),(2,20.0),(3,30.0)))
+sparse_v2: org.apache.spark.ml.linalg.Vector = (5,[0,2,3],[10.0,20.0,30.0])
+scala> 
+//Compare vectors
+scala> sparse_v1 == sparse_v2
+res0: Boolean = true
+scala> sparse_v1 == dense_v
+res1: Boolean = true      //All three objects are equal but…
+scala> dense_v.toString()
+res2: String = [10.0,0.0,20.0,30.0,0.0]
+scala> sparse_v2.toString()
+res3: String = (5,[0,2,3],[10.0,20.0,30.0]) //..internal representation differs
+scala> sparse_v2.toArray
+res4: Array[Double] = Array(10.0, 0.0, 20.0, 30.0, 0.0)
+//Interchangeable
+scala> dense_v.toSparse
+res5: org.apache.spark.mllib.linalg.SparseVector = (5,[0,2,3],[10.0,20.0,30.0])
+scala> sparse_v1.toDense
+res6: org.apache.spark.mllib.linalg.DenseVector = [10.0,0.0,20.0,30.0,0.0]
+scala>
+//A common operation
+scala> Vectors.sqdist(sparse_v1,
+        Vectors.dense(1.0,2.0,3.0,4.0,5.0))
+res7: Double = 1075.0
+
+//MATRICES
+//Create dense matrix
+scala> import org.apache.spark.ml.linalg.{Matrix,Matrices}
+import org.apache.spark.ml.linalg.{Matrix, Matrices}
+scala>
+//Values in column major order
+scala> Matrices.dense(3,2,Array(9.0,0,0,0,8.0,6))
+res38: org.apache.spark.ml.linalg.Matrix =
+9.0  0.0
+0.0  8.0
+0.0  6.0
+scala>
+//Create sparse matrix
+//1.0 0.0 4.0
+0.0 3.0 5.0
+2.0 0.0 6.0//
+scala> val sm: Matrix = Matrices.sparse(3,3,
+        Array(0,2,3,6), Array(0,2,1,0,1,2),
+        Array(1.0,2.0,3.0,4.0,5.0,6.0))
+sm: org.apache.spark.ml.linalg.Matrix =
+3 x 3 CSCMatrix
+(0,0) 1.0
+(2,0) 2.0
+(1,1) 3.0
+(0,2) 4.0
+(1,2) 5.0
+(2,2) 6.0
+scala>
+//Sparse matrix, a column of all zeros
+//third column all zeros
+scala> Matrices.sparse(3,4,Array(0,2,3,3,6),
+           Array(0,2,1,0,1,2),
+           values=Array(1.0,2.0,3.0,4.0,5.0,6.0)).toArray
+res85: Array[Double] = Array(1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 4.0, 5.0, 6.0)
+
+//Distributed matrices (mllib)
+scala> import org.apache.spark.mllib.linalg.{Vector,Vectors}
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
+scala> import org.apache.spark.mllib.linalg.distributed.RowMatrix
+import org.apache.spark.mllib.linalg.distributed.RowMatrix
+scala>
+scala> val dense_vlist: Array[Vector] = Array(
+    Vectors.dense(11.0,12,13,14),
+    Vectors.dense(21.0,22,23,24), Vectors.dense(31.0,32,33,34))
+dense_vlist: Array[org.apache.spark.mllib.linalg.Vector] = Array([11.0,12.0,13.0,14.0], [21.0,22.0,23.0,24.0], [31.0,32.0,33.0,34.0])
+scala>
+//Distribute the vector list
+scala> val rows  = sc.parallelize(dense_vlist)
+rows: org.apache.spark.rdd.RDD[org.apache.spark.mllib.linalg.Vector] = ParallelCollectionRDD[0] at parallelize at <console>:29
+scala> val m: RowMatrix = new RowMatrix(rows)
+m: org.apache.spark.mllib.linalg.distributed.RowMatrix = org.apache.spark.mllib.linalg.distributed.RowMatrix@5c5043fe
+scala> print("Matrix size is " + m.numRows()+"X"+m.numCols())
+Matrix size is 3X4
+scala>
+
+// ML PIPELINE
+//Pipeline example with single stage to illustrate syntax
+scala> import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.Pipeline
+scala> import org.apache.spark.ml.feature._
+import org.apache.spark.ml.feature._
+
+//Create source data frame
+scala> val df = spark.createDataFrame(Seq(
+         ("Oliver Twist","Charles Dickens"),
+        ("Adventures of Tom Sawyer","Mark Twain"))).toDF(
+        "Title","Author")
+//Split the Title to tokens
+scala> val tok = new Tokenizer().setInputCol("Title").
+          setOutputCol("words")
+tok: org.apache.spark.ml.feature.Tokenizer = tok_2b2757a3aa5f
+//Define a pipeline with a single stage
+scala> val p = new Pipeline().setStages(Array(tok))
+p: org.apache.spark.ml.Pipeline = pipeline_f5e0de400666
+//Run an Estimator (fit) using the pipeline
+scala> val model = p.fit(df)
+model: org.apache.spark.ml.PipelineModel = pipeline_d00989625bb2
+//Examine stages
+scala> p.getStages   //Returns a list of stage objects
+res1: Array[org.apache.spark.ml.PipelineStage] = Array(tok_55af0061af6d)
+// Examine the results
+scala> val m = model.transform(df).select("Title","words")
+m: org.apache.spark.sql.DataFrame = [Title: string, words: array<string>]
+scala> m.select("words").collect().foreach(println)
+[WrappedArray(oliver, twist)]
+[WrappedArray(adventures, of, tom, sawyer)]
+scala>
+
+//A realistic, multi-step pipeline that converts text to TF_IDF
+scala> import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.Pipeline
+scala> import org.apache.spark.ml.feature._
+import org.apache.spark.ml.feature._
+scala>  
+//Create a dataframe
+scala> val df2 = spark.createDataset(Array(
+         (1,"Here is some text to illustrate pipeline"),
+         (2, "and tfidf, which stands for term frequency inverse document frequency"
+         ))).toDF("LineNo","Text")
+//Define feature transformations, which are the pipeline stages 
+// Tokenizer splits text into tokens
+scala> val tok = new Tokenizer().setInputCol("Text").
+             setOutputCol("Words")
+tok: org.apache.spark.ml.feature.Tokenizer = tok_399dbfe012f8
+// HashingTF maps a sequence of words to their term frequencies using hashing
+// Larger value of numFeatures reduces hashing collision possibility
+scala> val tf = new HashingTF().setInputCol("Words").setOutputCol("tf").setNumFeatures(100)
+tf: org.apache.spark.ml.feature.HashingTF = hashingTF_e6ad936536ea
+// IDF, Inverse Docuemnt Frequency is a statistical weight that reduces weightage of commonly occuring words
+scala> val idf = new IDF().setInputCol("tf").setOutputCol("tf_idf")
+idf: org.apache.spark.ml.feature.IDF = idf_8af1fecad60a
+// VectorAssembler merges multiple columns into a single vector column
+scala> val va = new VectorAssembler().setInputCols(Array("tf_idf")).setOutputCol("features")
+va: org.apache.spark.ml.feature.VectorAssembler = vecAssembler_23205c3f92c8
+
+//Define pipeline
+scala> val tfidf_pipeline = new Pipeline().setStages(Array(tok,tf,idf,va))
+val tfidf_pipeline = new Pipeline().setStages(Array(tok,tf,idf,va))
+scala> tfidf_pipeline.getStages
+res2: Array[org.apache.spark.ml.PipelineStage] = Array(tok_399dbfe012f8, hashingTF_e6ad936536ea, idf_8af1fecad60a, vecAssembler_23205c3f92c8)
+scala>
+//Now execute the pipeline
+scala> val result = tfidf_pipeline.fit(df2).transform(df2).select("words","features").first()
+result: org.apache.spark.sql.Row = [WrappedArray(here, is, some, text, to, illustrate, pipeline),(100,[0,3,35,37,69,81],[0.4054651081081644,0.4054651081081644,0.4054651081081644,0.4054651081081644,0.4054651081081644,0.4054651081081644])]
+scala>
+
+//Some more features
+scala> import org.apache.spark.ml.feature._
+import org.apache.spark.ml.feature._
+
+scala>
+//Basic examples illustrating features usage
+//Look at model examples for more feature examples
+
+//Binarizer converts continuous value variable to two discrete values based on given threshold
+scala> import scala.util.Random
+import scala.util.Random
+scala> val nums = Seq.fill(10)(Random.nextDouble*100)
+...
+scala> val numdf = spark.createDataFrame(nums.map(Tuple1.apply)).toDF("raw_nums")
+numdf: org.apache.spark.sql.DataFrame = [raw_nums: double]
+scala> val binarizer = new Binarizer().setInputCol("raw_nums").
+            setOutputCol("binary_vals").setThreshold(50.0)
+binarizer: org.apache.spark.ml.feature.Binarizer = binarizer_538e392f56db
+scala> binarizer.transform(numdf).select("raw_nums","binary_vals").show(2)
++------------------+-----------+
+|          raw_nums|binary_vals|
++------------------+-----------+
+|55.209245003482884|        1.0|
+| 33.46202184060426|        0.0|
++------------------+-----------+
+scala>
+ //Bucketizer to convert continuous value variables to desired set of discrete values
+scala> val split_vals:Array[Double] = Array(0,20,50,80,100) //define intervals
+split_vals: Array[Double] = Array(0.0, 20.0, 50.0, 80.0, 100.0)
+scala> val b = new Bucketizer().
+           setInputCol("raw_nums").
+           setOutputCol("binned_nums").
+           setSplits(split_vals)
+b: org.apache.spark.ml.feature.Bucketizer = bucketizer_a4dd599e5977
+scala> b.transform(numdf).select("raw_nums","binned_nums").show(2)
++------------------+-----------+
+|          raw_nums|binned_nums|
++------------------+-----------+
+|55.209245003482884|        2.0|
+| 33.46202184060426|        1.0|
++------------------+-----------+
+scala>
+//Bucketizer is effectively equal to binarizer if only two intervals are given  
+scala> new Bucketizer().setInputCol("raw_nums").
+        setOutputCol("binned_nums").setSplits(Array(0,50.0,100.0)).
+        transform(numdf).select("raw_nums","binned_nums").show(2)
++------------------+-----------+
+|          raw_nums|binned_nums|
++------------------+-----------+
+|55.209245003482884|        1.0|
+| 33.46202184060426|        0.0|
++------------------+-----------+
+scala>
+
+
+//REGRESSION METHODS
+scala> import org.apache.spark.ml.regression.{LinearRegression,LinearRegressionModel}
+import org.apache.spark.ml.regression.{LinearRegression,LinearRegressionModel}
+
+// Load the data
+scala> val data = spark.read.format("libsvm").load("data/mllib/sample_linear_regression_data.txt")
+data: org.apache.spark.sql.DataFrame = [label: double, features: vector]
+
+// Build the model
+scala> val lrModel = new LinearRegression().fit(data)
+//Note: You can change ElasticNetParam, MaxIter and RegParam
+// Defaults are 0.0, 100 and 0.0
+lrModel: org.apache.spark.ml.regression.LinearRegressionModel = linReg_aa788bcebc42
+
+//Check Root Mean Squared Error
+scala> println("Root Mean Squared Error = " + lrModel.summary.rootMeanSquaredError)
+Root Mean Squared Error = 10.16309157133015
+
+
+
+//SVM (mllib)
+scala> import org.apache.spark.mllib.classification.{SVMModel, SVMWithSGD}
+import org.apache.spark.mllib.classification.{SVMModel, SVMWithSGD}
+scala> import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+scala> import org.apache.spark.mllib.util.MLUtils
+import org.apache.spark.mllib.util.MLUtils
+scala>
+// Load training data in LIBSVM format.
+scala> val data = MLUtils.loadLibSVMFile(sc, "data/mllib/sample_libsvm_data.txt")
+data: org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint] = MapPartitionsRDD[6] at map at MLUtils.scala:84
+scala>
+// Split data into training (60%) and test (40%).
+scala> val splits = data.randomSplit(Array(0.6, 0.4), seed = 11L)
+splits: Array[org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint]] = Array(MapPartitionsRDD[7] at randomSplit at <console>:29, MapPartitionsRDD[8] at randomSplit at <console>:29)
+scala> val training = splits(0).cache()
+training: org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint] = MapPartitionsRDD[7] at randomSplit at <console>:29
+scala> val test = splits(1)
+test: org.apache.spark.rdd.RDD[org.apache.spark.mllib.regression.LabeledPoint] = MapPartitionsRDD[8] at randomSplit at <console>:29
+scala>
+// Run training algorithm to build the model
+scala> val model = SVMWithSGD.train(training, numIterations=100)
+model: org.apache.spark.mllib.classification.SVMModel = org.apache.spark.mllib.classification.SVMModel: intercept = 0.0, numFeatures = 692, numClasses = 2, threshold = 0.0
+scala>
+// Clear the default threshold.
+scala> model.clearThreshold()
+res1: model.type = org.apache.spark.mllib.classification.SVMModel: intercept = 0.0, numFeatures = 692, numClasses = 2, threshold = None
+scala>
+
+// Compute raw scores on the test set.
+scala> val scoreAndLabels = test.map { point =>
+       val score = model.predict(point.features)
+      (score, point.label)
+      }
+scoreAndLabels: org.apache.spark.rdd.RDD[(Double, Double)] = MapPartitionsRDD[213] at map at <console>:37
+scala>
+// Get evaluation metrics.
+scala> val metrics = new BinaryClassificationMetrics(scoreAndLabels)
+metrics: org.apache.spark.mllib.evaluation.BinaryClassificationMetrics = org.apache.spark.mllib.evaluation.BinaryClassificationMetrics@3106aebb
+scala> println("Area under ROC = " + metrics.areaUnderROC())
+Area under ROC = 1.0
+scala>
+
+// Save and load model
+scala> model.save(sc, "target/tmp/scalaSVMWithSGDModel")
+scala> val sameModel = SVMModel.load(sc, "target/tmp/scalaSVMWithSGDModel")
+sameModel: org.apache.spark.mllib.classification.SVMModel = org.apache.spark.mllib.classification.SVMModel: intercept = 0.0, numFeatures = 692, numClasses = 2, threshold = None
+scala>
+
+
+
+
+
+//DECISION TREES
+//Model training example
+//Assuming ml.Pipeline and ml.features are already imported
+scala> import org.apache.spark.ml.classification.{
+        DecisionTreeClassifier, DecisionTreeClassificationModel}
+import org.apache.spark.ml.classification.{DecisionTreeClassifier, DecisionTreeClassificationModel}
+scala>
+/prepare train data
+scala> val f:String = "../work/simple_file1.csv"
+f: String = ../work/simple_file1.csv
+scala> val trainDF = spark.read.options(Map("header"->"true",
+            "inferSchema"->"true")).csv(f)
+trainDF: org.apache.spark.sql.DataFrame = [Text: string, Label: int]
+
+scala>
+ //define DecisionTree pipeline
+//StringIndexer maps labels(String or numeric) to label indices
+//Maximum occurrence label becomes 0 and so on
+scala> val lblIdx = new StringIndexer().
+                setInputCol("Label").
+                setOutputCol("indexedLabel")
+lblIdx: org.apache.spark.ml.feature.StringIndexer = strIdx_3a7bc9c1ed0d
+scala>
+// Create labels list to decode predictions
+scala> val labels = lblIdx.fit(trainDF).labels
+labels: Array[String] = Array(2, 1, 3)
+scala>
+//Define Text column indexing stage
+scala> val fIdx = new StringIndexer().
+                setInputCol("Text").
+              setOutputCol("indexedText")
+fIdx: org.apache.spark.ml.feature.StringIndexer = strIdx_49253a83c717
+// VectorAssembler
+scala> val va = new VectorAssembler().
+              setInputCols(Array("indexedText")).
+              setOutputCol("features")
+va: org.apache.spark.ml.feature.VectorAssembler = vecAssembler_764720c39a85
+//Define Decision Tree classifier. Set label and features vector
+scala> val dt = new DecisionTreeClassifier().
+            setLabelCol("indexedLabel").
+            setFeaturesCol("features")
+dt: org.apache.spark.ml.classification.DecisionTreeClassifier = dtc_84d87d778792
+//Define label converter to convert prediction index back to string
+scala> val lc = new IndexToString().
+                setInputCol("prediction").
+                setOutputCol("predictedLabel").
+                setLabels(labels)
+lc: org.apache.spark.ml.feature.IndexToString = idxToStr_e2f4fa023665
+scala>
+//String the stages together to form a pipeline
+scala> val dt_pipeline = new Pipeline().setStages(
+          Array(lblIdx,fIdx,va,dt,lc))
+dt_pipeline: org.apache.spark.ml.Pipeline = pipeline_d4b0e884dcbf
+scala> 
+ 
+//Apply pipeline to the train data
+scala> val resultDF = dt_pipeline.fit(trainDF).transform(trainDF)
+//Check results. Watch Label and predictedLabel column values match
+resultDF: org.apache.spark.sql.DataFrame = [Text: string, Label: int ... 6 more fields]
+scala> resultDF.select("Text","Label","features","prediction","predictedLabel").show()
++----+-----+--------+----------+--------------+
+|Text|Label|features|prediction|predictedLabel|
++----+-----+--------+----------+--------------+
+|   A|    1|   [1.0]|       1.0|             1|
+|   B|    2|   [0.0]|       0.0|             2|
+|   C|    3|   [2.0]|       2.0|             3|
+|   A|    1|   [1.0]|       1.0|             1|
+|   B|    2|   [0.0]|       0.0|             2|
++----+-----+--------+----------+--------------+
+scala>
+
+//Prepare evaluation data
+scala> val eval:String = "../work/simple_file2.csv"
+eval: String = ../work/simple_file2.csv
+scala> val evalDF = spark.read.options(Map("header"->"true",
+            "inferSchema"->"true")).csv(eval)
+evalDF: org.apache.spark.sql.DataFrame = [Text: string, Label: int]
+scala>
+//Apply the same pipeline to the evaluation data
+scala> val eval_resultDF = dt_pipeline.fit(evalDF).transform(evalDF)
+eval_resultDF: org.apache.spark.sql.DataFrame = [Text: string, Label: int ... 7 more fields]
+//Check evaluation results
+scala> eval_resultDF.select("Text","Label","features","prediction","predictedLabel").show()
++----+-----+--------+----------+--------------+
+|Text|Label|features|prediction|predictedLabel|
++----+-----+--------+----------+--------------+
+|   A|    1|   [0.0]|       1.0|             1|
+|   A|    1|   [0.0]|       1.0|             1|
+|   A|    2|   [0.0]|       1.0|             1|
+|   B|    2|   [1.0]|       0.0|             2|
+|   C|    3|   [2.0]|       2.0|             3|
++----+-----+--------+----------+--------------+
+//Note that predicted label for the third row is 1 as against Label(2) as expected
+
+//ENSEMBLES
+
+//Run Gradient boosted tree classifier
+// The dataset contains average marks and attendance of 20 students.
+//They are awarded pass of fail as per the following criteria:
+// Marks < 40 = Fail
+// Attendence == Poor => Fail
+// Marks >40 and attendence Full => Pass
+// Marks > 60 and attendence Enough or Full => Pass
+// Two exceptions were studentId 1009 and 1020 who were granted Pass
+
+//This example also emphasizes the reuse of pipeline stages
+// Initially the code trains a DecisionTreeClassifier
+// Then, same stages are reused to train a GBT classifier 
+scala> import org.apache.spark.ml.feature._
+scala> import org.apache.spark.ml.Pipeline
+scala> import org.apache.spark.ml.classification.{DecisionTreeClassifier,
+                                   DecisionTreeClassificationModel}
+scala> case class StResult(StudentId:String, Avg_Marks:Double,
+        Attendance:String, Result:String)
+scala> val file_path = "../work/StudentsPassFail.csv"
+scala> val source_ds = spark.read.options(Map("header"->"true",
+            "inferSchema"->"true")).csv(file_path).as[StResult]
+source_ds: org.apache.spark.sql.Dataset[StResult] = [StudentId: int, Avg_Marks: double ... 2 more fields]
+scala>
+//Examine source data
+scala> source_ds.show(4)
++---------+---------+----------+------+
+|StudentId|Avg_Marks|Attendance|Result|
++---------+---------+----------+------+
+|     1001|     48.0|      Full|  Pass|
+|     1002|     21.0|    Enough|  Fail|
+|     1003|     24.0|    Enough|  Fail|
+|     1004|      4.0|      Poor|  Fail|
++---------+---------+----------+------+
+
+scala> 		
+//Define preparation pipeline
+scala> val marks_bkt = new Bucketizer().setInputCol("Avg_Marks").
+        setOutputCol("Mark_bins").setSplits(Array(0,40.0,60.0,100.0))
+marks_bkt: org.apache.spark.ml.feature.Bucketizer = bucketizer_5299d2fbd1b2
+scala> val att_idx = new StringIndexer().setInputCol("Attendance").
+        setOutputCol("Att_idx")
+att_idx: org.apache.spark.ml.feature.StringIndexer = strIdx_2db54ba5200a
+scala> val label_idx = new StringIndexer().setInputCol("Result").
+        setOutputCol("Label")
+label_idx: org.apache.spark.ml.feature.StringIndexer = strIdx_20f4316d6232
+scala>
+//Create labels list to decode predictions
+scala> val resultLabels = label_idx.fit(source_ds).labels
+resultLabels: Array[String] = Array(Fail, Pass)
+scala> val va = new VectorAssembler().setInputCols(Array("Mark_bins","Att_idx")).
+                  setOutputCol("features")
+va: org.apache.spark.ml.feature.VectorAssembler = vecAssembler_5dc2dbbef48c
+scala> val dt = new DecisionTreeClassifier().setLabelCol("Label").
+         setFeaturesCol("features")
+dt: org.apache.spark.ml.classification.DecisionTreeClassifier = dtc_e8343ae1a9eb
+scala> val lc = new IndexToString().setInputCol("prediction").
+             setOutputCol("predictedLabel").setLabels(resultLabels)
+lc: org.apache.spark.ml.feature.IndexToString = idxToStr_90b6693d4313
+scala>
+//Define pipeline
+scala>val dt_pipeline = new Pipeline().setStages(Array(marks_bkt,att_idx,label_idx,va,dt,lc))
+dt_pipeline: org.apache.spark.ml.Pipeline = pipeline_95876bb6c969
+scala> val dtModel = dt_pipeline.fit(source_ds)
+dtModel: org.apache.spark.ml.PipelineModel = pipeline_95876bb6c969
+scala> val resultDF = dtModel.transform(source_ds)
+resultDF: org.apache.spark.sql.DataFrame = [StudentId: int, Avg_Marks: double ... 10 more fields]
+scala> resultDF.filter("Label != prediction").select("StudentId","Label","prediction","Result","predictedLabel").show()
++---------+-----+----------+------+--------------+
+|StudentId|Label|prediction|Result|predictedLabel|
++---------+-----+----------+------+--------------+
+|     1009|  1.0|       0.0|  Pass|          Fail|
+|     1020|  1.0|       0.0|  Pass|          Fail|
++---------+-----+----------+------+--------------+
+
+//Note that the difference is in the student ids that were granted pass
+
+//Same example using Gradient boosted tree classifier, reusing the pipeline stages
+scala> import org.apache.spark.ml.classification.GBTClassifier
+import org.apache.spark.ml.classification.GBTClassifier
+scala> val gbt = new GBTClassifier().setLabelCol("Label").
+              setFeaturesCol("features").setMaxIter(10)
+gbt: org.apache.spark.ml.classification.GBTClassifier = gbtc_cb55ae2174a1
+scala> val gbt_pipeline = new Pipeline().setStages(Array(marks_bkt,att_idx,label_idx,va,gbt,lc))
+gbt_pipeline: org.apache.spark.ml.Pipeline = pipeline_dfd42cd89403
+scala> val gbtResultDF = gbt_pipeline.fit(source_ds).transform(source_ds)
+gbtResultDF: org.apache.spark.sql.DataFrame = [StudentId: int, Avg_Marks: double ... 8 more fields]
+scala> gbtResultDF.filter("Label != prediction").select("StudentId","Label","Result","prediction","predictedLabel").show()
++---------+-----+------+----------+--------------+
+|StudentId|Label|Result|prediction|predictedLabel|
++---------+-----+------+----------+--------------+
+|     1009|  1.0|  Pass|       0.0|          Fail|
+|     1020|  1.0|  Pass|       0.0|          Fail|
++---------+-----+------+----------+--------------+
+
+//Multilayer perception classifier
+scala> import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
+import org.apache.spark.ml.classification.MultilayerPerceptronClassifier
+scala> import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
+scala> import org.apache.spark.mllib.util.MLUtils
+import org.apache.spark.mllib.util.MLUtils
+
+// Load training data
+scala> val data = MLUtils.loadLibSVMFile(sc, "data/mllib/sample_multiclass_classification_data.txt").toDF()
+data: org.apache.spark.sql.DataFrame = [label: double, features: vector]
+//Convert mllib vectors to ml Vectors for spark 2.0+. Retain data for previous versions
+scala> val data2 = MLUtils.convertVectorColumnsToML(data)
+data2: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [label: double, features: vector]
+
+// Split the data into train and test
+scala> val splits = data2.randomSplit(Array(0.6, 0.4), seed = 1234L)
+splits: Array[org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]] = Array([label: double, features: vector], [label: double, features: vector])
+scala> val train = splits(0)
+train: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [label: double, features: vector]
+scala> val test = splits(1)
+test: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [label: double, features: vector]
+
+// specify layers for the neural network: 
+// input layer of size 4 (features), two intermediate of size 5 and 4 and output of size 3 (classes)
+scala> val layers = Array[Int](4, 5, 4, 3)
+layers: Array[Int] = Array(4, 5, 4, 3)
+
+// create the trainer and set its parameters
+scala> val trainer = new MultilayerPerceptronClassifier().
+           setLayers(layers).setBlockSize(128).
+           setSeed(1234L).setMaxIter(100)
+trainer: org.apache.spark.ml.classification.MultilayerPerceptronClassifier = mlpc_edfa49fbae3c
+
+// train the model
+scala> val model = trainer.fit(train)
+model: org.apache.spark.ml.classification.MultilayerPerceptronClassificationModel = mlpc_edfa49fbae3c
+
+// compute accuracy on the test set
+scala> val result = model.transform(test)
+result: org.apache.spark.sql.DataFrame = [label: double, features: vector ... 1 more field]
+scala> val predictionAndLabels = result.select("prediction", "label")
+predictionAndLabels: org.apache.spark.sql.DataFrame = [prediction: double, label: double]
+scala> val evaluator = new MulticlassClassificationEvaluator().setMetricName("accuracy")
+evaluator: org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator = mcEval_a4f43d85f261
+scala> println("Accuracy:" + evaluator.evaluate(predictionAndLabels))
+Accuracy:0.9444444444444444
+
+
+
+//CLUSTERING
+//K-means clustering
+scala> import org.apache.spark.ml.clustering.{KMeans, KMeansModel}
+import org.apache.spark.ml.clustering.{KMeans, KMeansModel}
+scala> import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
+scala>
+
+//Define pipeline for kmeans. Reuse the previous stages in ENSEMBLES
+scala> val km = new KMeans()
+km: org.apache.spark.ml.clustering.KMeans = kmeans_b34da02bd7c8
+scala> val kmeans_pipeline = new Pipeline().setStages(Array(marks_bkt,att_idx,label_idx,va,km,lc))
+kmeans_pipeline: org.apache.spark.ml.Pipeline = pipeline_0cd64aa93a88
+//Train and transform
+scala> val kmeansDF = kmeans_pipeline.fit(source_ds).transform(source_ds)
+kmeansDF: org.apache.spark.sql.DataFrame = [StudentId: int, Avg_Marks: double ... 8 more fields]
+//Examine results
+scala> kmeansDF.filter("Label != prediction").count()
+res17: Long = 13
+
+

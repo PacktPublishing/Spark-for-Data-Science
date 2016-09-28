@@ -1,0 +1,428 @@
+//Chapter 6 Machine Learning - Python example code
+
+//VECTORS
+//Create vectors
+>>> from pyspark.ml.linalg import Vector, Vectors
+//Create vectors
+>>> dense_v = Vectors.dense(10.0,0.0,20.0,30.0,0.0)
+//Pass size, position index array and value array
+>>> sparse_v1 = Vectors.sparse(5,[0,2,3],
+                    [10.0,20.0,30.0])
+>>>
+//Another way to create sparse vector with position, value tuples
+>>> sparse_v2 = Vectors.sparse(5,
+                  [[0,10.0],[2,20.0],[3,30.0]])
+>>>
+//Compare vectors
+>>> sparse_v1 == sparse_v2
+True
+>>> sparse_v1 == dense_v
+True      //All three objects are equal but…
+>>> dense_v
+DenseVector([10.0, 0.0, 20.0, 30.0, 0.0])
+>>> sparse_v1
+SparseVector(5, {0: 10.0, 2: 20.0, 3: 30.0}) //..internal representation differs
+>>> sparse_v2
+SparseVector(5, {0: 10.0, 2: 20.0, 3: 30.0})
+
+//Interchangeable
+//Note: as of Spark 2.0.0, toDense and toSparse are not available in pyspark
+
+//A common operation
+>>> Vectors.squared_distance(sparse_v1,
+        Vectors.dense(1.0,2.0,3.0,4.0,5.0))
+1075.0
+
+//MATRICES
+//Create dense matrix
+>>> from pyspark.ml.linalg import Matrix, Matrices
+//Values in column major order
+>>> Matrices.dense(3,2,[9.0,0,0,0,8.0,6])
+DenseMatrix(3, 2, [9.0, 0.0, 0.0, 0.0, 8.0, 6.0], False)
+>>>
+//Create sparse matrix
+//1.0 0.0 4.0
+0.0 3.0 5.0
+2.0 0.0 6.0//
+>>> sm = Matrices.sparse(3,3,
+        [0,2,3,6], [0,2,1,0,1,2],
+        [1.0,2.0,3.0,4.0,5.0,6.0])
+>>>
+//Sparse matrix, a column of all zeros
+//third column all zeros
+>>> Matrices.sparse(3,4,[0,2,3,3,6],
+        [0,2,1,0,1,2],
+    values=[1.0,2.0,3.0,4.0,5.0,6.0]).toArray()
+array([[ 1.,  0.,  0.,  4.],
+       [ 0.,  3.,  0.,  5.],
+       [ 2.,  0.,  0.,  6.]])
+>>> 
+
+//Distributed matrices
+>>> from pyspark.mllib.linalg import Vector,Vectors
+>>> from pyspark.mllib.linalg.distributed import RowMatrix
+
+>>> dense_vlist = [Vectors.dense(11.0,12,13,14),
+         Vectors.dense(21.0,22,23,24), Vectors.dense(31.0,32,33,34)]
+>>> rows  = sc.parallelize(dense_vlist)
+>>> m = RowMatrix(rows)
+>>> "Matrix size is {0} X {1}".format(m.numRows(), m.numCols())
+'Matrix size is 3 X 4'
+
+// ML PIPELINE
+//Pipeline example with single stage to illustrate syntax
+//Create source data frame
+>>> from pyspark.ml.pipeline import Pipeline
+>>> from pyspark.ml.feature import Tokenizer
+>>>  df = sqlContext.createDataFrame([
+    ("Oliver Twist","Charles Dickens"),
+    ("Adventures of Tom Sawyer","Mark Twain")]).toDF("Title","Author")
+>>> //Split the Title to tokens
+>>> tok = Tokenizer(inputCol="Title",outputCol="words")
+//Define a pipeline with a single stage
+>>> p = Pipeline(stages=[tok])
+//Run an Estimator (fit) using the pipeline
+>>> model = p.fit(df)
+//Examine stages
+>>> p.getStages()  //Returns a list of stage objects
+[Tokenizer_4f35909c4c504637a263]
+// Examine the results
+>>> m = model.transform(df).select("Title","words")
+>>> [x[0] for x in m.select("words").collect()]
+[[u'oliver', u'twist'], [u'adventures', u'of', u'tom', u'sawyer']]
+>>>
+
+//A realistic, multi-step pipeline that converts text to TF_ID
+>>> from pyspark.ml.pipeline import Pipeline
+>>> from pyspark.ml.feature import Tokenizer, HashingTF, IDF, VectorAssembler, \
+               StringIndexer, VectorIndexer
+//Create a dataframe
+>>> df2 = sqlContext.createDataFrame([
+    [1,"Here is some text to illustrate pipeline"],
+    [2,"and tfidf, which stands for term frequency inverse document frequency"
+    ]]).toDF("LineNo","Text")
+//Define feature transformations, which are the pipeline stages 
+//Tokenizer splits text into tokens
+>>> tok = Tokenizer(inputCol="Text",outputCol="words")
+// HashingTF maps a sequence of words to their term frequencies using hashing
+// Larger the numFeatures, lower the hashing collision possibility
+>>> tf = HashingTF(inputCol="words", outputCol="tf",numFeatures=1000)
+// IDF, Inverse Docuemnt Frequency is a statistical weight that reduces weightage of commonly occuring words
+>>> idf = IDF(inputCol = "tf",outputCol="tf_idf")
+// VectorAssembler merges multiple columns into a single vector column
+>>> va = VectorAssembler(inputCols=["tf_idf"],outputCol="features")
+
+//Define pipeline
+>>> tfidf_pipeline = Pipeline(stages=[tok,tf,idf,va])
+>>> tfidf_pipeline.getStages()
+[Tokenizer_4f5fbfb6c2a9cf5725d6, HashingTF_4088a47d38e72b70464f, IDF_41ddb3891541821c6613, VectorAssembler_49ae83b800679ac2fa0e]
+
+>>> //Now execute the pipeline 
+>>> result = tfidf_pipeline.fit(df2).transform(df2).select("words","features").collect()
+>>> [(x[0],x[1]) for x in result]
+[([u'here', u'is', u'some', u'text', u'to', u'illustrate', u'pipeline'], SparseVector(1000, {135: 0.4055, 169: 0.4055, 281: 0.4055, 388: 0.4055, 400: 0.4055, 603: 0.4055, 937: 0.4055})), ([u'and', u'tfidf,', u'which', u'stands', u'for', u'term', u'frequency', u'inverse', u'document', u'frequency'], SparseVector(1000, {36: 0.4055, 188: 0.4055, 333: 0.4055, 378: 0.4055, 538: 0.4055, 597: 0.4055, 727: 0.4055, 820: 0.4055, 960: 0.8109}))]
+>>>
+
+//Some more features
+>>> from pyspark.ml import feature, pipeline
+>>>
+//Basic examples illustrating features usage
+//Look at model examples for more examples
+
+//Binarizer converts continuous value variable to two discrete values based on given threshold
+>>> import random
+>>> nums = [random.random()*100 for x in range(1,11)]
+>>> numdf = sqlContext.createDataFrame(
+             [[x] for x in nums]).toDF("raw_nums")
+>>> binarizer = feature.Binarizer(threshold= 50,
+       inputCol="raw_nums", outputCol="binary_vals")
+>>> binarizer.transform(numdf).select("raw_nums","binary_vals").show(2)
++------------------+-----------+
+|          raw_nums|binary_vals|
++------------------+-----------+
+| 95.41304359504672|        1.0|
+|41.906045589243405|        0.0|
++------------------+-----------+
+>>>
+//Bucketizer to convert continuous value variables to desired set of discrete values
+>>> split_vals = [0,20,50,80,100] //define intervals
+>>> b = feature.Bucketizer(inputCol="raw_nums",outputCol="binned_nums",splits=split_vals)
+>>> b.transform(numdf).select("raw_nums","binned_nums").show(2)
++------------------+-----------+
+|          raw_nums|binned_nums|
++------------------+-----------+
+| 95.41304359504672|        3.0|
+|41.906045589243405|        1.0|
++------------------+-----------+
+
+//Bucketizer is effectively equal to binarizer if only two intervals are given  
+>>> feature.Bucketizer(inputCol="raw_nums",outputCol="binned_nums",
+                  splits=[0,50.0,100.0]).transform(numdf).select(
+                  "raw_nums","binned_nums").show(2)
++------------------+-----------+
+|          raw_nums|binned_nums|
++------------------+-----------+
+| 95.41304359504672|        1.0|
+|41.906045589243405|        0.0|
++------------------+-----------+
+
+>>> 
+
+//REGRESSION METHODS
+//LinearRegression
+>>> from pyspark.ml.regression import LinearRegression, LinearRegressionModel
+>>> 
+// Load the data
+>>> data = spark.read.format("libsvm").load("data/mllib/sample_linear_regression_data.txt")
+>>>
+// Build the model
+>>> lrModel = LinearRegression().fit(data)
+//Note: You can change ElasticNetParam, MaxIter and RegParam
+// Defaults are 0.0, 100 and 0.0
+
+//Check Root Mean Squared Error
+>>> print "Root Mean Squared Error = ", lrModel.summary.rootMeanSquaredError
+Root Mean Squared Error = 10.16309157133015
+>>>
+
+//SVM (mllib) 
+//Note: Code not part of the Word document because mllib is in maintenance mode
+>>> from pyspark.mllib.classification import SVMModel, SVMWithSGD
+>>> from pyspark.mllib.evaluation import BinaryClassificationMetrics
+>>> from pyspark.mllib.util import MLUtils
+
+// Load training data in LIBSVM format
+>>> data = MLUtils.loadLibSVMFile(sc, "data/mllib/sample_libsvm_data.txt")
+>>>
+// Split data into training (60%) and test (40%).
+>>> splits = data.randomSplit([0.6, 0.4], seed = 11L)
+>>> training = splits[0].cache()
+>>> test = splits[1]
+
+// Run training algorithm to build the model
+>>> numIterations = 100
+>>> model = SVMWithSGD.train(training, numIterations)
+>>>
+// Clear the default threshold.
+>>> model.clearThreshold()
+
+// Compute raw scores on the test set.
+>>>
+>>> scoreAndLabels = test.map(lambda point: 
+      (model.predict(point.features), point.label))
+>>>
+// Get evaluation metrics.
+>>> metrics = BinaryClassificationMetrics(scoreAndLabels)
+>>> auROC = metrics.areaUnderROC() //Code failed here due to some double and numpyfloat type mismatch error
+
+println("Area under ROC = " + auROC)
+
+// Save and load model
+>>> model.save(sc, "target/tmp/scalaSVMWithSGDModel")
+>>> sameModel = SVMModel.load(sc, "target/tmp/scalaSVMWithSGDModel")
+
+//DECISION TREES
+
+//Model training example
+>>> from pyspark.ml.pipeline import Pipeline
+>>> from pyspark.ml.feature import StringIndexer, VectorIndexer, VectorAssembler, IndexToString
+>>> from pyspark.ml.classification import DecisionTreeClassifier, DecisionTreeClassificationModel
+>>>
+//prepare train data
+>>> file_location = "../work/simple_file1.csv"
+>>> trainDF = spark.read.csv(file_location,header=True,inferSchema=True)
+ //Read file
+>>> 
+//define DecisionTree pipeline
+//StringIndexer maps labels(String or numeric) to label indices
+//Maximum occurrence label becomes 0 and so on
+>>> lblIdx = StringIndexer(inputCol = "Label",outputCol = "indexedLabel")
+// Create labels list to decode predictions
+>>> labels = lblIdx.fit(trainDF).labels
+>>> labels
+[u'2', u'1', u'3']
+>>>
+//Define Text column indexing stage
+>>> fidx = StringIndexer(inputCol="Text",outputCol="indexedText")
+// Vector assembler
+>>> va = VectorAssembler(inputCols=["indexedText"],outputCol="features")
+
+//Define Decision Tree classifier. Set label and features vector
+>>> dt = DecisionTreeClassifier(labelCol="indexedLabel",featuresCol="features")
+
+//Define label converter to convert prediction index back to string
+>>> lc = IndexToString(inputCol="prediction",outputCol="predictedLabel",
+                       labels=labels)
+//String the stages together to form a pipeline
+>>> dt_pipeline = Pipeline(stages=[lblIdx,fidx,va,dt,lc])
+>>> 
+>>> /Apply decision tree pipeline
+>>> dtModel = dt_pipeline.fit(trainDF)
+>>> dtDF = dtModel.transform(trainDF)
+>>> dtDF.columns
+['Text', 'Label', 'indexedLabel', 'indexedText', 'features', 'rawPrediction', 'probability', 'prediction', 'predictedLabel']
+>>> dtDF.select("Text","Label","indexedLabel","prediction", "predictedLabel").show()
++----+-----+------------+----------+--------------+
+|Text|Label|indexedLabel|prediction|predictedLabel|
++----+-----+------------+----------+--------------+
+|   A|    1|         1.0|       1.0|             1|
+|   B|    2|         0.0|       0.0|             2|
+|   C|    3|         2.0|       2.0|             3|
+|   A|    1|         1.0|       1.0|             1|
+|   B|    2|         0.0|       0.0|             2|
++----+-----+------------+----------+--------------+
+
+>>> 
+>>> //prepare evaluation dataframe
+>>> eval_file_path = "../work/simple_file2.csv"
+>>> evalDF = spark.read.csv(eval_file_path,header=True, inferSchema=True) //Read eval file
+>>> eval_resultDF = dt_pipeline.fit(evalDF).transform(evalDF)
+>>> eval_resultDF.columns
+['Text', 'Label', 'indexedLabel', 'indexedText', 'features', 'rawPrediction', 'probability', 'prediction', 'predictedLabel']
+>>> eval_resultDF.select("Text","Label","indexedLabel","prediction", "predictedLabel").show()
++----+-----+------------+----------+--------------+
+|Text|Label|indexedLabel|prediction|predictedLabel|
++----+-----+------------+----------+--------------+
+|   A|    1|         1.0|       1.0|             1|
+|   A|    1|         1.0|       1.0|             1|
+|   A|    2|         0.0|       1.0|             1|
+|   B|    2|         0.0|       0.0|             2|
+|   C|    3|         2.0|       2.0|             3|
++----+-----+------------+----------+--------------+
+
+>>>
+ 
+//ENSEMBLES
+
+// The dataset contains average marks and attendance of 20 students.
+//They are awarded pass of fail as per the following criteria:
+// Marks < 40 = Fail
+// Attendence == Poor => Fail
+// Marks >40 and attendence Full => Pass
+// Marks > 60 and attendence Enough or Full => Pass
+// Two exceptions were studentId 1009 and 1020 who were granted Pass
+
+//This example also emphasizes the reuse of pipeline stages
+// Initially the code trains a DecisionTreeClassifier
+// Then, same stages are reused to train a GBT classifier 
+ 
+>>> from pyspark.ml.pipeline import Pipeline
+>>> from pyspark.ml.feature import Bucketizer, StringIndexer, VectorAssembler, IndexToString
+>>> from pyspark.ml.classification import DecisionTreeClassifier, DecisionTreeClassificationModel
+>>>
+//Get source file
+>>> file_path = "../work/StudentsPassFail.csv"
+>>> source_df = spark.read.csv(file_path,header=True,inferSchema=True)
+>>>
+//Examine source data
+>>> source_df.show(4)
++---------+---------+----------+------+
+|StudentId|Avg_Marks|Attendance|Result|
++---------+---------+----------+------+
+|     1001|     48.0|      Full|  Pass|
+|     1002|     21.0|    Enough|  Fail|
+|     1003|     24.0|    Enough|  Fail|
+|     1004|      4.0|      Poor|  Fail|
++---------+---------+----------+------+
+
+//Define preparation pipeline
+>>> marks_bkt = Bucketizer(inputCol="Avg_Marks",
+        outputCol="Mark_bins", splits=[0,40.0,60.0,100.0])
+>>> att_idx = StringIndexer(inputCol = "Attendance",
+        outputCol="Att_idx")
+>>> label_idx = StringIndexer(inputCol="Result",
+                   outputCol="Label")
+>>>
+//Create labels list to decode predictions
+>>> resultLabels = label_idx.fit(source_df).labels
+>>> resultLabels
+[u'Fail', u'Pass']
+>>>
+>>> va = VectorAssembler(inputCols=["Mark_bins","Att_idx"],
+                         outputCol="features")
+>>> dt = DecisionTreeClassifier(labelCol="Label", featuresCol="features")
+>>> lc = IndexToString(inputCol="prediction",outputCol="predictedLabel",
+             labels=resultLabels)
+>>> dt_pipeline = Pipeline(stages=[marks_bkt, att_idx, label_idx,va,dt,lc])
+>>> dtModel = dt_pipeline.fit(source_df)
+>>> resultDF = dtModel.transform(source_df)
+>>> 
+//Look for obervatiuons where prediction did not match
+>>> resultDF.filter("Label != prediction").select(
+         "StudentId","Label","prediction","Result","predictedLabel").show()
++---------+-----+----------+------+--------------+
+|StudentId|Label|prediction|Result|predictedLabel|
++---------+-----+----------+------+--------------+
+|     1009|  1.0|       0.0|  Pass|          Fail|
+|     1020|  1.0|       0.0|  Pass|          Fail|
++---------+-----+----------+------+--------------+
+//Note that the difference is in the student ids that were granted pass
+>>>
+
+
+//Same example using Gradient boosted tree classifier, reusing the pipeline stages
+>>> from pyspark.ml.classification import GBTClassifier
+>>> gbt = GBTClassifier(labelCol="Label", featuresCol="features",maxIter=10)
+>>> gbt_pipeline = Pipeline(stages=[marks_bkt,att_idx,label_idx,va,gbt,lc])
+>>> gbtResultDF = gbt_pipeline.fit(source_df).transform(source_df)
+>>> gbtResultDF.columns
+['StudentId', 'Avg_Marks', 'Attendance', 'Result', 'Mark_bins', 'Att_idx', 'Label', 'features', 'prediction', 'predictedLabel']
+>>> gbtResultDF.filter("Label != prediction").select("StudentId","Label","Result","prediction","predictedLabel").show()
++---------+-----+------+----------+--------------+
+|StudentId|Label|Result|prediction|predictedLabel|
++---------+-----+------+----------+--------------+
+|     1009|  1.0|  Pass|       0.0|          Fail|
+|     1020|  1.0|  Pass|       0.0|          Fail|
++---------+-----+------+----------+--------------+
+
+
+//Multilayer perception classifier
+>>> from pyspark.ml.classification import MultilayerPerceptronClassifier
+>>> from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+>>> from pyspark.mllib.util import MLUtils
+>>>
+
+//Load training data
+>>> data = spark.read.format("libsvm").load(
+      "data/mllib/sample_multiclass_classification_data.txt")
+//Convert mllib vectors to ml Vectors for spark 2.0+. Retain data for previous versions
+>>> data2 = MLUtils.convertVectorColumnsToML(data)
+>>>
+// Split the data into train and test
+>>> splits = data2.randomSplit([0.6, 0.4], seed = 1234L)
+>>> train, test = splits[0], splits[1]
+>>>
+// specify layers for the neural network: 
+// input layer of size 4 (features), two intermediate of size 5 and 4 and output of size 3 (classes)
+>>> layers = [4,5,4,3]
+
+// create the trainer and set its parameters
+>>> trainer = MultilayerPerceptronClassifier(layers=layers, blockSize=128,
+                 seed=1234L, maxIter=100)
+// train the model
+>>> model = trainer.fit(train)
+>>>
+// compute accuracy on the test set
+>>> result = model.transform(test)
+>>> predictionAndLabels = result.select("prediction", "label")
+>>> evaluator = MulticlassClassificationEvaluator().setMetricName("accuracy")
+>>> print "Accuracy:",evaluator.evaluate(predictionAndLabels)
+Accuracy: 0.901960784314
+>>>
+
+//CLUSTERING
+//K-means clustering
+//Run kmeans clustering on the same students data
+>>> from pyspark.ml.clustering import KMeans, KMeansModel
+>>> from pyspark.ml.linalg import Vectors
+>>>
+
+//Define pipeline for kmeans. Reuse the previous stages in ENSEMBLES
+>>> km = KMeans()
+>>> kmeans_pipeline = Pipeline(stages = [marks_bkt, att_idx, label_idx,va,km,lc])
+//Train and transform
+>>> kmeansDF = kmeans_pipeline.fit(source_df).transform(source_df)
+>>> kmeansDF.columns
+['StudentId', 'Avg_Marks', 'Attendance', 'Result', 'Mark_bins', 'Att_idx', 'Label', 'features', 'prediction', 'predictedLabel']
+>>> kmeansDF.filter("Label != prediction").count()
+4

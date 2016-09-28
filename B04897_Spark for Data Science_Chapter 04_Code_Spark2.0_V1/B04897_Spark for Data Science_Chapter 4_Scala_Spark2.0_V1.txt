@@ -1,0 +1,183 @@
+// Chapter 4 Unified Data Access - Scala example code
+
+Datasets
+---------
+Example 1: Create a Dataset from a simple collection
+
+scala> val ds1 = List.range(1,5).toDS()
+ds1: org.apache.spark.sql.Dataset[Int] = [value: int]
+//Perform an action
+scala> ds1.collect()
+res3: Array[Int] = Array(1, 2, 3, 4)
+//Create from an RDD
+scala> val colors = List("red","orange","blue","green","yellow")
+scala> val color_ds = sc.parallelize(colors).map(x => 
+     (x,x.length)).toDS()
+//Add a case class
+case class Color(var color: String, var len: Int)
+val color_ds = sc.parallelize(colors).map(x => 
+     Color(x,x.length)).toDS()
+
+//Examine the structure
+scala> color_ds.dtypes
+res26: Array[(String, String)] = Array((color,StringType), (len,IntegerType))
+scala> color_ds.schema
+res25: org.apache.spark.sql.types.StructType = StructType(StructField(color,StringType,true),
+StructField(len,IntegerType,false))
+//Examine the execution plan
+scala> color_ds.explain()
+== Physical Plan ==
+Scan ExistingRDD[color#57,len#58]
+
+//Convert the Dataset to a DataFrame
+scala> val color_df = color_ds.toDF()
+color_df: org.apache.spark.sql.DataFrame = [color: string, len: int]
+
+Example 2: Convert the dataset to a DataFrame
+scala> color_df.show()
++------+---+
+| color|len|
++------+---+
+|   red|  3|
+|orange|  6|
+|  blue|  4|
+| green|  5|
+|yellow|  6|
++------+---+
+
+Example 3: Convert a DataFrame to a Dataset
+//Construct a DataFrame first
+scala> val color_df = sc.parallelize(colors).map(x => 
+            (x,x.length)).toDF("color","len")
+color_df: org.apache.spark.sql.DataFrame = [color: string, len: int]
+//Convert the DataFrame to a Dataset with a given Structure
+scala> val ds_from_df = color_df.as[Color]
+ds_from_df: org.apache.spark.sql.Dataset[Color] = [color: string, len: int]
+//Check the execution plan
+scala> ds_from_df.explain
+== Physical Plan ==
+WholeStageCodegen
+:  +- Project [_1#102 AS color#105,_2#103 AS len#106]
+:     +- INPUT
++- Scan ExistingRDD[_1#102,_2#103]
+
+
+//Example 4:  Create a Dataset from json
+//Set filepath
+scala> val file_path = "<Your parh>/authors.json"
+file_path: String = <Your path>/authors.json
+//Create case class to match schema
+scala> case class Auth(first_name: String, last_name: String,books: Array[String])
+defined class Auth
+
+//Create dataset from json using case class
+//Note that the json document should have one record per line
+scala> val auth = spark.read.json(file_path).as[Auth]
+auth: org.apache.spark.sql.Dataset[Auth] = [books: array<string>, firstName: string ... 1 more field]
+
+//Look at the data
+scala> auth.show()
++--------------------+----------+---------+
+|               books|first_name|last_name|
++--------------------+----------+---------+
+|                null|      Mark|    Twain|
+|                null|   Charles|  Dickens|
+|[Jude the Obscure...|    Thomas|    Hardy|
++--------------------+----------+---------+
+
+//Try explode to see array contents on separate lines
+
+scala> auth.select(explode($"books") as "book",
+            $"first_name",$"last_name").show(2,false)
++------------------------+----------+---------+
+|book                    |first_name|last_name|
++------------------------+----------+---------+
+|Jude the Obscure        |Thomas    |Hardy    |
+|The Return of the Native|Thomas    |Hardy    |
++------------------------+----------+---------+
+
+//Example 5: Window example with moving average computation
+
+scala> import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.expressions.Window
+
+//Create a DataFrame containing monthly sales data for two products
+
+scala> val monthlySales = spark.read.options(Map({"header"->"true"},{"inferSchema" -> "true"})).
+                            csv("<Your path>/MonthlySales.csv")
+monthlySales: org.apache.spark.sql.DataFrame = [Product: string, Month: int ... 1 more field]
+
+//Prepare WindowSpec to create a 3 month sliding window for a product
+//Negative subscript denotes rows above current row
+scala> val w = Window.partitionBy(monthlySales("Product")).orderBy(monthlySales("Month")).rangeBetween(-2,0)
+w: org.apache.spark.sql.expressions.WindowSpec = org.apache.spark.sql.expressions.WindowSpec@3cc2f15
+
+//Define compute on the sliding window, a moving average in this case 
+scala> val f = avg(monthlySales("Sales")).over(w)
+f: org.apache.spark.sql.Column = avg(Sales) OVER (PARTITION BY Product ORDER BY Month ASC RANGE BETWEEN 2 PRECEDING AND CURRENT ROW)
+
+//Apply the sliding window and compute. Examine the results
+scala> monthlySales.select($"Product",$"Sales",$"Month",bround(f,2).alias("MovingAvg")).
+                    orderBy($"Product",$"Month").show(6)
++-------+-----+-----+---------+                                                 
+|Product|Sales|Month|MovingAvg|
++-------+-----+-----+---------+
+|     P1|   66|    1|     66.0|
+|     P1|   24|    2|     45.0|
+|     P1|   54|    3|     48.0|
+|     P1|    0|    4|     26.0|
+|     P1|   56|    5|    36.67|
+|     P1|   34|    6|     30.0|
++-------+-----+-----+---------+
+
+
+//Example 6: Streaming example
+//Understand nc
+// Netcat or nc is a networking utility that can be used for creating TCP/UDP connections 
+// -k Forces nc to stay listening for another connection after its current connection is completed.
+// -l Used to specify that nc should listen for an incoming connection
+//             rather than initiate a connection to a remote host. 
+
+//Run system activity report to collect memory usage in one terminal window
+// The following command shows memory utilization for every 2 seconds, 20 times
+
+// It diverts the output to the given port and you can check raw output from the browser
+//sar -r 2 20 | nc -lk 9999
+
+
+//In spark-shell window, do the following
+//Read stream
+scala> val myStream = spark.readStream.format("socket").
+                       option("host","localhost").
+                       option("port",9999).load()
+myStream: org.apache.spark.sql.DataFrame = [value: string]
+
+//Filter out unwanted lines and then extract free memory part as a float
+//Drop missing values, if any
+scala> val myDF = myStream.filter($"value".contains("IST")).
+               select(substring($"value",15,9).cast("float").as("memFree")).
+               na.drop().select($"memFree")
+myDF: org.apache.spark.sql.DataFrame = [memFree: float]
+
+//Define an aggregate function
+scala> val avgMemFree = myDF.select(avg("memFree"))
+avgMemFree: org.apache.spark.sql.DataFrame = [avg(memFree): double]
+
+
+//Create StreamingQuery handle that writes on to the console
+scala> val query = avgMemFree.writeStream.
+          outputMode("complete").
+          format("console").
+          start()
+query: org.apache.spark.sql.streaming.StreamingQuery = Streaming Query - query-0 [state = ACTIVE]
+
+Batch: 0
+-------------------------------------------
++-----------------+
+|     avg(memFree)|
++-----------------+
+|4116531.380952381|
++-----------------+
+....
+
+

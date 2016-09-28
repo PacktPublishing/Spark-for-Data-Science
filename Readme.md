@@ -15,11 +15,11 @@ Code Snippet:
 ###Related Spark for Data Science Products:
 
  
-  * [Fast Data Processing with Spark](https://www.packtpub.com/big-data-and-business-intelligence/spark-data-science?utm_source=github&utm_medium=repository&utm_content=9781782167068) 
+  * [Fast Data Processing with Spark](https://www.packtpub.com/big-data-and-business-intelligence/fast-data-processing-spark?utm_source=github&utm_medium=repository&utm_content=9781782167068) 
  
- * [Data Science with Spark [Video]](https://www.packtpub.com/big-data-and-business-intelligence/practical-data-science-cookbook?utm_source=github&utm_medium=repository&utm_content=978178398024)
+ * [Data Science with Spark [Video]](https://www.packtpub.com/big-data-and-business-intelligence/data-science-spark-video?utm_source=github&utm_medium=repository&utm_content=9781786467935)
  
- * [Practical Data Science Cookbook](https://www.packtpub.com/big-data-and-business-intelligence/tableau-10-business-intelligence-cookbook?utm_source=github&utm_medium=repository&utm_content=9781786465634)
+ * [Practical Data Science Cookbook](https://www.packtpub.com/big-data-and-business-intelligence/practical-data-science-cookbook?utm_source=github&utm_medium=repository&utm_content=9781783980246)
 
 
 
